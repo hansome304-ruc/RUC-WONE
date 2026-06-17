@@ -10,6 +10,7 @@ http://192.168.31.7:11311/
 
 ```bash
 cd /home/ubuntu/RUC-WONE
+bash locomotion/scripts/base_probe.sh
 bash locomotion/scripts/movebase.sh doctor
 bash locomotion/scripts/movebase.sh state
 bash locomotion/scripts/movebase.sh stop
@@ -70,4 +71,19 @@ bash locomotion/scripts/lift.sh goto --position 200 --yes
 
 ```text
 /home/ubuntu/RUC-WONE/locomotion/lift/
+```
+
+## 建图与定点移动
+
+底盘建图/导航需要先确认雷达、地图和导航 topic 是否存在：
+
+```bash
+cd /home/ubuntu/RUC-WONE
+bash locomotion/scripts/base_probe.sh --json > /tmp/base_probe.json
+```
+
+详细流程见：
+
+```text
+/home/ubuntu/RUC-WONE/locomotion/NAVIGATION.md
 ```

@@ -87,3 +87,10 @@ bash locomotion/scripts/base_probe.sh --json > /tmp/base_probe.json
 ```text
 /home/ubuntu/RUC-WONE/locomotion/NAVIGATION.md
 ```
+
+如果已经完成定位，可发送 ROS1 `move_base` 目标点：
+
+```bash
+bash locomotion/scripts/nav.sh set-initial --x 1.0 --y 2.0 --yaw 0.0
+bash locomotion/scripts/nav.sh goto --x 2.0 --y 1.0 --yaw 0.0 --yes
+```

@@ -94,3 +94,104 @@ bash locomotion/scripts/base_probe.sh --json > /tmp/base_probe.json
 - 有厂商 goal/nav service：封装厂商定点导航。
 - 有 `/scan` 但没有导航：补 SLAM/Nav2 或 ROS1 move_base 环境。
 - 只有 `/cmd_vel`/`/odom`：先做短距离 odom waypoint，不做真正避障导航。
+
+## 5. 当前底盘已经发现的接口
+
+2026-06-17 已探测到：
+
+- 雷达：`/scan`、`/scan_filtered`
+- 地图：`/map`
+- 定位：`/localization_state`、`/pose_info`
+- 导航入口：`/move_base_simple/goal`
+- 规划/避障：`/move_base/global_costmap/*`、`/move_base/local_costmap/*`
+
+这说明底盘已经有 ROS1 `move_base` 导航栈。优先使用厂商已有导航，不需要自己从零写避障。
+
+当前风险：
+
+```text
+current_map_name = 0203.yaml.txt
+confidence = 0
+initialed = -1
+```
+
+这表示底盘加载了旧地图，但当前没有完成定位。定位成功前不要发导航目标。
+
+## 6. 定点移动步骤
+
+### 6.1 安全准备
+
+1. 清空底盘前方和两侧障碍。
+2. 急停保持可触达。
+3. 先确认低层运动正常：
+
+```bash
+cd /home/ubuntu/RUC-WONE
+bash locomotion/scripts/movebase.sh doctor
+bash locomotion/scripts/movebase.sh state
+```
+
+### 6.2 确认定位状态
+
+```bash
+bash locomotion/scripts/movebase.sh doctor
+```
+
+如果看到：
+
+```text
+confidence = 0
+initialed = -1
+```
+
+先做初始化或重新建图，不要发目标点。
+
+### 6.3 设置初始位姿
+
+如果你知道机器人在当前地图 `/map` 中的位置，先发初始位姿：
+
+```bash
+bash locomotion/scripts/nav.sh set-initial --x 1.0 --y 2.0 --yaw 0.0
+```
+
+角度也可以用度数：
+
+```bash
+bash locomotion/scripts/nav.sh set-initial --x 1.0 --y 2.0 --yaw 90 --deg
+```
+
+然后再次检查：
+
+```bash
+bash locomotion/scripts/movebase.sh doctor
+```
+
+需要看到定位状态变好，例如 `initialed` 不再是 `-1`，`confidence` 不再是 `0`。
+
+### 6.4 发定点导航目标
+
+确认定位成功后，才发送目标点：
+
+```bash
+bash locomotion/scripts/nav.sh goto --x 2.0 --y 1.0 --yaw 0.0 --yes
+```
+
+注意：`goto` 会触发底盘自主运动，所以必须显式加 `--yes`。
+
+### 6.5 停止
+
+如果需要停止底盘：
+
+```bash
+bash locomotion/scripts/movebase.sh stop
+```
+
+## 7. 重新建图
+
+如果当前场景和 `0203.yaml.txt` 不一致，需要先建当前场景地图。现在 ROS topic 里能看到 `/mapping_state`、`/map_change_call`、`/save_3d_map` 等厂商接口线索，但还没有确认“开始建图/保存地图”的完整命令格式。
+
+建议顺序：
+
+1. 先问厂商确认建图接口或 Web 控制台入口。
+2. 如果厂商提供 topic/service 格式，把它封装到 `locomotion/scripts/nav.sh`。
+3. 如果厂商没有接口文档，再考虑自己部署 ROS1/ROS2 SLAM。

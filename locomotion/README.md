@@ -94,3 +94,12 @@ bash locomotion/scripts/base_probe.sh --json > /tmp/base_probe.json
 bash locomotion/scripts/nav.sh set-initial --x 1.0 --y 2.0 --yaw 0.0
 bash locomotion/scripts/nav.sh goto --x 2.0 --y 1.0 --yaw 0.0 --yes
 ```
+
+如果暂时没有当前场景地图，只做短距离相对移动：
+
+```bash
+bash locomotion/scripts/odom_nav.sh relative --dx 0.5 --dy 0.0 --dyaw 0.0 --yes
+bash locomotion/scripts/odom_nav.sh relative --dx 0.0 --dy 0.0 --dyaw 90 --deg --yes
+```
+
+`odom_nav.sh` 不使用地图，也没有真正避障，只适合小范围调试。

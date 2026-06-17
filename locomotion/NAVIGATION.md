@@ -195,3 +195,65 @@ bash locomotion/scripts/movebase.sh stop
 1. 先问厂商确认建图接口或 Web 控制台入口。
 2. 如果厂商提供 topic/service 格式，把它封装到 `locomotion/scripts/nav.sh`。
 3. 如果厂商没有接口文档，再考虑自己部署 ROS1/ROS2 SLAM。
+
+## 8. 没有厂商建图入口时怎么办
+
+有三条替代路线，按稳定性排序：
+
+### 路线 A：短期使用里程计相对移动
+
+这条路不需要地图。适合短距离、小范围、有人看护的比赛动作编排。
+
+前进 `0.5m`：
+
+```bash
+cd /home/ubuntu/RUC-WONE
+bash locomotion/scripts/odom_nav.sh relative --dx 0.5 --dy 0.0 --dyaw 0.0 --yes
+```
+
+左转 `90deg`：
+
+```bash
+bash locomotion/scripts/odom_nav.sh relative --dx 0.0 --dy 0.0 --dyaw 90 --deg --yes
+```
+
+先前进 `0.4m`，再最终朝向 `30deg`：
+
+```bash
+bash locomotion/scripts/odom_nav.sh relative --dx 0.4 --dy 0.0 --dyaw 30 --deg --yes
+```
+
+限制：
+
+- 没有地图。
+- 没有真正避障。
+- 里程计会漂移。
+- 适合几十厘米到一两米的短动作，不适合复杂场景自主导航。
+
+### 路线 B：外部 SLAM 建图
+
+底盘已经暴露 `/scan`、`/odom`、`/tf`，理论上可以在外部机器跑 SLAM：
+
+1. 从底盘 ROS1 master 读取 `/scan`、`/odom`、`/tf`。
+2. 用 ROS1 `gmapping` / `hector_slam` / `cartographer`，或 ROS2 `slam_toolbox` 建图。
+3. 保存 `.pgm + .yaml` 地图。
+4. 再用定位和 `move_base`/Nav2 发目标点。
+
+当前这台机器是 Ubuntu 22.04 + ROS2 Humble，只有 `rviz2`，没有 `slam_toolbox`、`nav2`、`ros1_bridge`，所以这条路线需要额外安装或用 Docker 环境。
+
+### 路线 C：使用厂商已有旧地图，但手动初始化
+
+如果当前场地和 `0203.yaml.txt` 很接近，可以手动发 `/initialpose` 让定位收敛，然后试小目标：
+
+```bash
+bash locomotion/scripts/nav.sh set-initial --x 1.0 --y 2.0 --yaw 0.0
+bash locomotion/scripts/movebase.sh doctor
+```
+
+只有定位状态变好后，才发：
+
+```bash
+bash locomotion/scripts/nav.sh goto --x 1.5 --y 2.0 --yaw 0.0 --yes
+```
+
+如果地图不匹配，这条路不要用。

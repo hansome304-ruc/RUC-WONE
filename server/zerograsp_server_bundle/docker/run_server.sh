@@ -39,7 +39,15 @@ exec docker run "${DETACH_ARGS[@]}" \
     -e ZEROGRASP_CONFIG="${ZEROGRASP_CONFIG:-configs/demo.yaml}" \
     -e GD_MODEL="${GD_MODEL:-IDEA-Research/grounding-dino-tiny}" \
     -e SAM_MODEL="${SAM_MODEL:-facebook/sam-vit-base}" \
-    -e HF_ENDPOINT="https://hf-mirror.com" \
+    -e HF_ENDPOINT="${HF_ENDPOINT:-https://hf-mirror.com}" \
     -e HF_HOME=/root/.cache/huggingface \
+    -e HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-0}" \
+    -e TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-0}" \
+    -e HTTP_PROXY="${HTTP_PROXY:-${http_proxy:-}}" \
+    -e HTTPS_PROXY="${HTTPS_PROXY:-${https_proxy:-}}" \
+    -e NO_PROXY="${NO_PROXY:-${no_proxy:-}}" \
+    -e http_proxy="${http_proxy:-${HTTP_PROXY:-}}" \
+    -e https_proxy="${https_proxy:-${HTTPS_PROXY:-}}" \
+    -e no_proxy="${no_proxy:-${NO_PROXY:-}}" \
     -e LOG_LEVEL="${LOG_LEVEL:-info}" \
     zerograsp:latest /bin/bash /opt/app/serve.sh

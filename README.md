@@ -142,22 +142,31 @@ RUC-WONE 已经包含 ZeroGrasp 的服务端代码和 Docker 环境补丁：
 
 注意：真实 `/grasp` 仍需要 GPU 服务器上有完整 ZeroGrasp checkout、`configs/demo.yaml` 和 checkpoint。这个 bundle 应同步到完整 repo 根目录后启动。
 
-如果 ZeroGrasp 跑在远端 GPU 服务器，标准流程是：
+如果 ZeroGrasp 跑在 `zjlab` 远端 GPU 服务器，推荐目录是：
+如果本机没有配置 `ssh zjlab` 别名，就把下面命令里的 `zjlab` 换成 `user@10.47.41.144`。
+
+```text
+/home/user/zyh/
+├── RUC-WONE/
+└── ZeroGrasp/
+```
+
+平时启动，使用已经下载好的 HuggingFace 缓存，不重新下载模型：
 
 ```bash
-# 在机器人/本地机上同步 RUC-WONE 内置 server bundle 到 GPU 服务器的完整 ZeroGrasp repo
-rsync -avzh --progress --exclude="__pycache__" --exclude=".git" \
-  /home/ubuntu/RUC-WONE/server/zerograsp_server_bundle/ \
-  user@10.47.41.144:~/zyh/ZeroGrasp/
+ssh zjlab "cd /home/user/zyh/RUC-WONE && git pull --ff-only && bash server/setup_zerograsp_overlay.sh --offline-cache --start --gpu 0"
+```
 
-# 如果镜像还没构建，先构建；已有 zerograsp:latest 可跳过
-ssh user@10.47.41.144 "cd ~/zyh/ZeroGrasp && ./docker/build.sh"
+第一次构建镜像，或 Dockerfile/依赖变了，再加 `--build`：
 
-# 在 GPU 服务器启动容器，默认 GPU 0，端口 9100
-ssh user@10.47.41.144 "cd ~/zyh/ZeroGrasp && DETACH=1 ./docker/run_server.sh 0"
+```bash
+ssh zjlab "cd /home/user/zyh/RUC-WONE && bash server/setup_zerograsp_overlay.sh --offline-cache --build --start --gpu 0"
+```
 
-# 看日志，出现 perception_server ready 表示 warmup 完成
-ssh user@10.47.41.144 "docker logs -f perception-server"
+看日志，出现 `perception_server ready` 表示 warmup 完成：
+
+```bash
+ssh zjlab "docker logs -f perception-server"
 ```
 
 机器人端把远端 `9100` 映射到本地：

@@ -112,6 +112,67 @@ http://127.0.0.1:9100
 
 这个目录包含 FastAPI server、Dockerfile、依赖约束、启动脚本和测试脚本。真实 `/grasp` 还需要 GPU 服务器上有完整 ZeroGrasp checkout、`configs/demo.yaml` 和 checkpoint；所以推荐把这个 bundle 同步到完整 repo 根目录。
 
+### zjlab 推荐目录
+
+如果远程 GPU 主机是 `zjlab`，并且你的工作目录统一放在 `/home/user/zyh`，推荐保持两个 sibling repo。
+如果本机没有配置 `ssh zjlab` 别名，就把下面命令里的 `zjlab` 换成 `user@10.47.41.144`。
+
+```text
+/home/user/zyh/
+├── RUC-WONE/      # 你的比赛仓库，正常 git clone / git pull
+└── ZeroGrasp/     # 完整 ZeroGrasp checkout，保留 configs、submodules、checkpoint
+```
+
+第一次部署目录：
+
+```bash
+ssh zjlab "mkdir -p /home/user/zyh"
+ssh zjlab "cd /home/user/zyh && git clone git@github.com:hansome304-ruc/RUC-WONE.git"
+ssh zjlab "cd /home/user/zyh && git clone <ZeroGrasp仓库地址> ZeroGrasp"
+```
+
+以后所有 ZeroGrasp 服务都从 `RUC-WONE` 里启动；脚本会自动把
+`server/zerograsp_server_bundle/` 覆盖进 `/home/user/zyh/ZeroGrasp`。
+
+平时启动，优先用已经下载好的 HuggingFace 缓存，不重新下载：
+
+```bash
+ssh zjlab "cd /home/user/zyh/RUC-WONE && git pull --ff-only && bash server/setup_zerograsp_overlay.sh --offline-cache --start --gpu 0"
+```
+
+看日志：
+
+```bash
+ssh zjlab "docker logs -f perception-server"
+```
+
+第一次构建镜像，或 Dockerfile/依赖变了，再加 `--build`：
+
+```bash
+ssh zjlab "cd /home/user/zyh/RUC-WONE && bash server/setup_zerograsp_overlay.sh --offline-cache --build --start --gpu 0"
+```
+
+停止：
+
+```bash
+ssh zjlab "docker rm -f perception-server"
+```
+
+只测试链路、不加载真实模型：
+
+```bash
+ssh zjlab "cd /home/user/zyh/RUC-WONE && bash server/setup_zerograsp_overlay.sh --stub --start"
+```
+
+如果后续拿到了稳定的 ZeroGrasp Git URL，也可以把它加成 submodule：
+
+```bash
+cd /home/ubuntu/RUC-WONE
+git submodule add <ZeroGrasp仓库地址> third_party/ZeroGrasp
+```
+
+那时 `setup_zerograsp_overlay.sh` 会优先使用 `third_party/ZeroGrasp`，但 checkpoint 仍然建议单独管理，不要直接进普通 git。
+
 ### 极速上手
 
 如果 ZeroGrasp 跑在远端 GPU 服务器，先从机器人/本地机同步 bundle：

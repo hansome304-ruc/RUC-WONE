@@ -167,12 +167,20 @@ GraspNet 自己的 R 第 0 列才是 approach，server 内部已经做了基变�
 | `ZEROGRASP_CONFIG` | `configs/demo.yaml` | ZeroGrasp config 路径 |
 | `GD_MODEL` | `IDEA-Research/grounding-dino-tiny` | HF model id |
 | `SAM_MODEL` | `facebook/sam-vit-base` | HF model id |
+| `HF_ENDPOINT` | `https://hf-mirror.com` | HuggingFace 下载源；镜像不通时可改成 `https://huggingface.co` |
+| `HF_HUB_OFFLINE` / `TRANSFORMERS_OFFLINE` | `0` | `1` 表示只用本地 HF cache，不联网检查 metadata |
+| `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` | "" | GPU 主机需要代理访问外网时透传给容器 |
 | `LOG_LEVEL` | `info` | uvicorn / perception_server 日志级别 |
 
 例：要换大一点的 SAM 模型：
 ```bash
 docker rm -f perception-server
 SAM_MODEL=facebook/sam-vit-large DETACH=1 ./docker/run_server.sh 0
+```
+
+例：模型已经在宿主机 `~/.cache/huggingface`，启动时不联网：
+```bash
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 DETACH=1 ./docker/run_server.sh 0
 ```
 
 </details>
@@ -189,7 +197,7 @@ SAM_MODEL=facebook/sam-vit-large DETACH=1 ./docker/run_server.sh 0
 | `Autotuner.__init__() got an unexpected keyword argument 'pre_hook'` | ocnn 装到 2.3+，但当前 triton 是 2.2 | Dockerfile 里要有 `RUN pip install ... ocnn==2.2.4` 覆盖 |
 | `OctreeFeatureExtractor.forward() missing 2 required positional arguments` | submodule 在 `d602008`（旧 API） | `cd submodules/octree_feature_extractor && git checkout main`，rebuild |
 | `PyTorch >= 2.4 is required but found 2.2.0` | transformers 5.x 不支持 torch 2.2 | `requirements-server.txt` 钉 `transformers<5` |
-| `HTTPSConnectionPool(host='huggingface.co'...)` | 远端服务器连接 HuggingFace 官方源超时/不通 | `docker/run_server.sh` 已经配置了 `HF_ENDPOINT="https://hf-mirror.com"` 镜像源。如果依然报错，请确认远端宿主机是否能正常访问 `hf-mirror.com`，或检查容器是否未正确注入环境变量。 |
+| `HTTPSConnectionPool(host='huggingface.co'...)` 或 `HTTPSConnectionPool(host='hf-mirror.com'...)` | 远端服务器下载 GroundingDINO/SAM 的 HF 权重失败 | 先确认 GPU 主机/容器能访问当前 `HF_ENDPOINT`；镜像不通可尝试 `HF_ENDPOINT=https://huggingface.co DETACH=1 ./docker/run_server.sh 0`，需要代理时加 `HTTPS_PROXY=...`；或提前把 `IDEA-Research/grounding-dino-tiny` 和 `facebook/sam-vit-base` 下载到宿主机 `~/.cache/huggingface`。 |
 
 ### 2. `/segment` 返回 score=0 mask 全黑
 GroundingDINO 没检测到目标。调 prompt：英文短语 + 形容词，结尾加 "."（server 会自动补）。也试试加 bbox 直接绕过 GD：

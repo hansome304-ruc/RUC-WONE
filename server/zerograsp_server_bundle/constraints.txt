@@ -1,0 +1,16 @@
+# Single source of truth for "do not violate" version pins.
+# Used as `pip install -c constraints.txt ...` everywhere in the Dockerfile.
+#
+# Why each line is here:
+#   numpy<2       -> torch 2.2.0 + sklearn + open3d wheels were built against numpy 1.x ABI;
+#                    numpy 2.x triggers `_ARRAY_API not found` and dtype size mismatches.
+#   triton==2.2.0 -> the version torch 2.2 expects; pinning prevents accidental upgrades
+#                    by xformers / accelerate / etc.
+#
+# NOTE on ocnn: upstream `requirements.txt` declares `ocnn @ git+...` (no version),
+# which resolves to a 2.3+ commit using a triton-3.0-only Autotuner kwarg (`pre_hook`).
+# A constraint like `ocnn==2.2.4` here would conflict with that git URL and pip refuses.
+# Instead, we install whatever the git URL gives, then force-reinstall ocnn==2.2.4
+# from PyPI in the Dockerfile (see "ocnn override" step).
+numpy<2
+triton==2.2.0

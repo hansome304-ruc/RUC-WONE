@@ -1,0 +1,48 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local Python packaging/build outputs
+build/
+dist/
+*.egg-info/
+
+# Local environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+
+# Runtime logs and generated debug artifacts
+airbot_logs/
+logs/
+*.log
+debug_out/
+
+# Robot/perception runtime media
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.bag
+*.db3
+
+# Large model/checkpoint artifacts
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*~

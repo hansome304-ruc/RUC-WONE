@@ -1,0 +1,21 @@
+# Server-only dependencies. Layered separately from upstream `requirements.txt`
+# so we don't fork the upstream file.
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+opencv-python-headless
+PyYAML
+# Segmentation: HuggingFace transformers covers both GroundingDINO and SAM (1).
+# We deliberately use SAM-1 (`facebook/sam-vit-base`) rather than SAM-2 because
+# SAM-2's transformers bindings churn rapidly and aren't worth the upgrade pain
+# for a mask refiner. Swap by env var when SAM-2 stabilizes.
+#
+# Pin transformers below 5.x: the 5.x major bump (Sep 2025) raised the
+# minimum supported PyTorch to 2.4, but ZeroGrasp's image is on torch 2.2.0
+# (cu121). 5.x silently disables the torch backend with the message
+# "PyTorch >= 2.4 is required but found 2.2.0".
+# 4.46.x is the last branch that's stable on torch 2.2 *and* has both
+# GroundingDINO and SAM model classes.
+transformers>=4.45,<5
+accelerate<1
+huggingface_hub

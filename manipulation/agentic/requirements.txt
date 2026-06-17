@@ -1,0 +1,16 @@
+# All of these are already present in the `dos-w1` conda env on this robot.
+# Listed for documentation; install with:
+#   conda activate dos-w1 && pip install -r requirements.txt
+airbot_py>=5.1.6
+pyrealsense2>=2.56
+opencv-python-headless>=4.8
+numpy>=1.24
+requests>=2.31
+python-dotenv>=1.0
+pillow>=10
+matplotlib>=3.7
+tqdm>=4.65
+
+# Optional, only for the agent layer.
+# anthropic>=0.40
+# openai>=1.40

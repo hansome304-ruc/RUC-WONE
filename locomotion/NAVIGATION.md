@@ -257,3 +257,97 @@ bash locomotion/scripts/nav.sh goto --x 1.5 --y 2.0 --yaw 0.0 --yes
 ```
 
 如果地图不匹配，这条路不要用。
+
+## 9. SDK 探索结论
+
+目前本机已检查：
+
+- `airbot_py-5.1.6-py3-none-any.whl`
+- `/home/ubuntu/out_dexmal/mobile_base`
+- `/home/ubuntu/dos_w1/base_cmd.py`
+- RUC-WONE 内 `airbot_base` 兼容层
+
+结论：
+
+- `airbot_py` 主要是机械臂 SDK，没有发现底盘建图/导航 API。
+- `dos_w1/base_cmd.py` 只是 ROS2 `/cmd_vel` 速度发布器。
+- 旧的 `mobile_base/airbot_base.py` 现在只是兼容导入。
+- `AIRBOTBase.build_map/load_map/move_to_pose` 等名字存在，但只是 `NotImplementedError` 占位。
+
+所以当前更可靠的方向是直接利用底盘 ROS1 master 暴露出来的 topic/param/service。
+
+## 10. 避障距离相关参数
+
+底盘当前 `move_base` 参数里能读到这些关键项：
+
+| 参数 | 当前值 | 含义 |
+|---|---:|---|
+| `/move_base/local_costmap/footprint` | `[[0.35,-0.305],[0.35,0.305],[-0.35,0.305],[-0.35,-0.305]]` | 机器人外形，约 `0.70m x 0.61m` |
+| `/move_base/local_costmap/footprint_padding` | `0.01` | 外形额外膨胀 |
+| `/move_base/local_costmap/inflation_layer/inflation_radius` | `0.8` | 局部代价地图障碍膨胀半径 |
+| `/move_base/global_costmap/inflation_layer/inflation_radius` | `0.8` | 全局代价地图障碍膨胀半径 |
+| `/move_base/local_costmap/laser_layer/laser_scan_sensor/obstacle_range` | `2.9` | 雷达障碍物标记距离 |
+| `/move_base/local_costmap/laser_layer/laser_scan_sensor/raytrace_range` | `3.0` | 雷达清除距离 |
+| `/move_base/TrajectoryPlannerROS/stop_path_obs_dis` | `1.5` | 路径障碍停止距离，厂商扩展参数名 |
+| `/move_base/tracking_body_padding` | `0.015` | 跟踪/车体 padding |
+
+可以认为底盘“避障距离”主要由 `inflation_radius`、`footprint_padding`、`stop_path_obs_dis` 这几类参数影响。
+
+注意：
+
+- 当前服务列表没有发现常见的 dynamic reconfigure `set_parameters` 接口。
+- 只用 `rosparam set`/XMLRPC `setParam` 改参数，运行中的 `move_base` 不一定立即生效。
+- 真要改，建议先做只读记录，再小幅调整，并准备重启底盘导航节点或整机。比赛现场不要大改。
+
+## 11. 外部 SLAM 环境建议
+
+底盘是 ROS1 Noetic 生态，已经暴露：
+
+```text
+/scan
+/scan_filtered
+/odom
+/tf
+```
+
+理论上可以外部建图。推荐两种做法：
+
+### 方案 A：ROS1 Noetic Docker
+
+优点是和底盘 ROS1 生态最接近。建议镜像内安装：
+
+```text
+ros-noetic-slam-gmapping
+ros-noetic-map-server
+ros-noetic-rviz
+```
+
+运行时用 host 网络，并设置：
+
+```bash
+export ROS_MASTER_URI=http://192.168.31.7:11311
+export ROS_IP=192.168.31.243
+```
+
+注意不要直接在底盘 ROS master 上发布同名 `/map` 或 `map->odom` TF，以免干扰底盘自己的 `localization2d/move_base`。更稳的方式是独立 ROS master + topic relay，或者 remap 外部 SLAM 输出 topic。
+
+### 方案 B：ROS2 Humble + slam_toolbox
+
+这台机器当前只有 ROS2 `rviz2`，还没有：
+
+```text
+slam_toolbox
+nav2
+ros1_bridge
+```
+
+如果走 ROS2，需要安装这些包，并把 ROS1 `/scan`、`/odom`、`/tf` 桥接到 ROS2。工程量比 ROS1 Docker 更大，但后续 Nav2 生态更现代。
+
+### 推荐
+
+起步阶段先不要碰底盘原生导航节点。优先：
+
+1. 用 `base_probe.sh` 固定记录 topic/param。
+2. 用 `odom_nav.sh` 做短距离动作。
+3. 另开 Docker/独立 ROS master 做 SLAM 实验。
+4. SLAM 稳定后，再考虑把地图和导航接回 RUC-WONE。

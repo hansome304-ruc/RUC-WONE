@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "calibration_type": "fixed_orientation_contact_correspondence",
+  "robot_id": "dosw1",
+  "arm": "left",
+  "tool_id": "dual_suction_v1",
+  "created_at": "2026-08-14T21:40:00+08:00",
+  "calibrated": true,
+  "usable_for_motion": true,
+  "motion_scope": "task1_fixed_downward_counterclockwise_90_only",
+  "frames": {
+    "base": "left_base/base_link",
+    "flange": "left_base/end_link",
+    "tcp": "left_suction_tcp"
+  },
+  "translation_m": [
+    0.018015253458068578,
+    -0.0029797120849362024,
+    0.008250605262227912
+  ],
+  "rotation_xyzw": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "flange_to_tcp": {
+    "translation_m": [
+      0.018015253458068578,
+      -0.0029797120849362024,
+      0.008250605262227912
+    ],
+    "rotation_calibrated": false,
+    "note": "Task1 keeps the flange downward and rotates the full pose counterclockwise 90 degrees about left-base Z."
+  },
+  "locked_flange_quaternion_xyzw": [
+    -0.5016150619955987,
+    0.4993298784780835,
+    0.49865019978989383,
+    0.5003998204313357
+  ],
+  "contact_sample": {
+    "operator_confirmed_stable_seal": true,
+    "flange_position_in_base_m": [
+      0.253018362785117,
+      -0.19339466855808978,
+      0.03929911657471927
+    ],
+    "carton_surface_center_in_base_m": [
+      0.25606636,
+      -0.18517659,
+      0.02128042
+    ],
+    "surface_to_target_flange_offset_in_base_m": [
+      -0.003047997214882997,
+      -0.008218078558089786,
+      0.018018696574719266
+    ],
+    "absolute_contact_flange_z_m": 0.03929911657471927,
+    "surface_to_flange_z_offset_m": 0.018018696574719266,
+    "source_detection_id": "4ef9efe88d8444e8a0f443f4afa6e206"
+  },
+  "execution_policy": {
+    "orientation_mode": "locked",
+    "allowed_quaternion_error_deg": 1.0,
+    "approach_axis": "base_z_negative",
+    "pre_contact_clearance_m": 0.025,
+    "test_lift_m": 0.02,
+    "reuse_for_horizontal_and_vertical_carton_layouts": false
+  },
+  "derived_orientation": {
+    "source_calibration": "left_suction_tcp.json",
+    "rotation_axis": "left_base_z",
+    "rotation_deg": 90.0,
+    "view_convention": "counterclockwise_when_viewed_from_above",
+    "tcp_xy_compensation_rotated": true
+  },
+  "validation": {
+    "level": "operator_requested_derived_yaw_rotation",
+    "generic_orientation_motion_allowed": false,
+    "note": "Task1 only. Task2 continues using the original suction calibration."
+  }
+}

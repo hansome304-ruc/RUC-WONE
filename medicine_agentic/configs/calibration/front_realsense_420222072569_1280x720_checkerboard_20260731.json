@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-07-31",
+  "camera": {
+    "model": "Intel RealSense D435I",
+    "serial": "420222072569",
+    "stream": "color",
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "source": {
+    "kind": "checkerboard_calibration",
+    "checkerboard_inner_corners": [11, 8],
+    "square_size_m": 0.02,
+    "calibration_episode": "handeye_right_02",
+    "result_path": "/home/ubuntu/calib_candidates/20260731_handeye_right03_left01_test01_1280x720_v1/result/camera_intrinsics.json"
+  },
+  "intrinsics": {
+    "matrix": [
+      [907.9211813442888, 0.0, 638.3147247799354],
+      [0.0, 907.4159645304343, 381.14137920472274],
+      [0.0, 0.0, 1.0]
+    ],
+    "distortion_model": "opencv_brown_conrady",
+    "distortion_coefficients": [0.0, 0.0, 0.0, 0.0, 0.0]
+  },
+  "validation": {
+    "right_handeye_episode": "handeye_right_03",
+    "projection_episode": "projection_right03_live_01",
+    "right_tip_visual_error_px": [0.0, 6.0],
+    "approved_for_projection": true,
+    "approved_for_motion": false
+  }
+}

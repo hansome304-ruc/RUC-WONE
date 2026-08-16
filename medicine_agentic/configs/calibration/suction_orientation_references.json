@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "robot_id": "dosw1",
+  "revision": 1,
+  "updated_at": "2026-07-30T09:07:39.502Z",
+  "units": {
+    "joint_position": "rad",
+    "position": "m",
+    "quaternion": "xyzw",
+    "eef_feedback": "m",
+    "lift": "mm"
+  },
+  "poses": {
+    "suction_forward_reference": {
+      "kind": "paired_joint_pose",
+      "status": "draft",
+      "captured_at": "2026-07-30T09:07:39.501Z",
+      "source": "teleop_snapshot",
+      "instruction": "左臂吸盘默认向前参考，仅用于比较和提取向下姿态",
+      "scene_id": "medicine_table_v1",
+      "context": {
+        "base_docked": true,
+        "lift_height_mm": 0.0
+      },
+      "tooling": {
+        "left_tool_id": "suction_v1",
+        "right_tool_id": "gripper_v1",
+        "left_tcp_config": "/home/ubuntu/RUC-WONE/medicine_agentic/configs/calibration/left_suction_tcp.json",
+        "right_tcp_config": "/home/ubuntu/RUC-WONE/medicine_agentic/configs/calibration/right_gripper_tcp.json",
+        "left_tcp_config_sha256": null,
+        "right_tcp_config_sha256": null
+      },
+      "arms": {
+        "left": {
+          "joint_position_rad": [
+            -0.8215075731277466,
+            -0.20771344006061554,
+            0.07801175117492676,
+            1.0736628770828247,
+            0.048256658017635345,
+            -1.1526284217834473
+          ],
+          "flange_pose_in_base": {
+            "position_m": [
+              0.21465263202780183,
+              -0.22241020505063092,
+              0.20404678999900916
+            ],
+            "quaternion_xyzw": [
+              -0.01824411611408175,
+              0.05499788863544555,
+              -0.38649758538319035,
+              0.9204683595680097
+            ]
+          },
+          "eef_feedback_m": [
+            0.00045986282433614634
+          ],
+          "driver_state": "IDLE",
+          "control_mode": "SERVO_JOINT_POS",
+          "capture_metrics": {
+            "sample_count": 20,
+            "joint_peak_to_peak_rad": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max_joint_peak_to_peak_rad": 0.0,
+            "position_peak_to_peak_m": [
+              3.704806069737554e-05,
+              2.5993243548350087e-05,
+              8.251380222457083e-05
+            ],
+            "max_position_peak_to_peak_m": 8.251380222457083e-05,
+            "orientation_spread_deg": 0.021857032126428384,
+            "stable": true,
+            "thresholds": {
+              "max_joint_peak_to_peak_rad": 0.003,
+              "max_position_peak_to_peak_m": 0.001,
+              "max_orientation_spread_deg": 0.2
+            }
+          }
+        },
+        "right": {
+          "joint_position_rad": [
+            0.7932783961296082,
+            -0.12607766687870026,
+            0.03337911143898964,
+            -1.1037994623184204,
+            -0.04177157208323479,
+            1.1854352951049805
+          ],
+          "flange_pose_in_base": {
+            "position_m": [
+              0.21327172342160697,
+              0.2100482653324319,
+              0.2037620195669759
+            ],
+            "quaternion_xyzw": [
+              0.026678970810705867,
+              0.040759202582492306,
+              0.37614246363618664,
+              0.9252803720878451
+            ]
+          },
+          "eef_feedback_m": [
+            0.02231701840177467
+          ],
+          "driver_state": "IDLE",
+          "control_mode": "SERVO_JOINT_POS",
+          "capture_metrics": {
+            "sample_count": 20,
+            "joint_peak_to_peak_rad": [
+              0.0,
+              0.0,
+              0.0003814771771430969,
+              0.000762939453125,
+              0.0,
+              0.0
+            ],
+            "max_joint_peak_to_peak_rad": 0.000762939453125,
+            "position_peak_to_peak_m": [
+              1.564078050336759e-05,
+              1.6199980423126092e-05,
+              0.0002076743951087423
+            ],
+            "max_position_peak_to_peak_m": 0.0002076743951087423,
+            "orientation_spread_deg": 0.06556981601507217,
+            "stable": true,
+            "thresholds": {
+              "max_joint_peak_to_peak_rad": 0.003,
+              "max_position_peak_to_peak_m": 0.001,
+              "max_orientation_spread_deg": 0.2
+            }
+          }
+        }
+      },
+      "validation": {
+        "stable": true,
+        "inside_joint_soft_limits": true,
+        "maximum_paired_sample_skew_ms": 6.208813,
+        "validation_level": "feedback_and_soft_limits_only",
+        "collision_free": "unproven",
+        "manual_transition_validation_required": true
+      }
+    }
+  },
+  "content_sha256": "fb9426af58fa2c8c7331a53452fdc85cabe63a0574597ffadaf2068e976d63fe"
+}

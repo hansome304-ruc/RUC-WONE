@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ruc-wone.local/schemas/carton-reference-face-bank-1.0.json",
+  "title": "Carton reference-face bank",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "bank_id",
+    "sku_id",
+    "asset_version",
+    "status",
+    "created_at",
+    "units",
+    "box_size",
+    "object_frame",
+    "faces",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "bank_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}@[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "sku_id": {
+      "$ref": "#/$defs/safeId"
+    },
+    "asset_version": {
+      "$ref": "#/$defs/safeId"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "ready"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "units": {
+      "const": "mm"
+    },
+    "box_size": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "length",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "length": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "object_frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "x_axis",
+        "y_axis",
+        "z_axis",
+        "face_normals"
+      ],
+      "properties": {
+        "origin": {
+          "const": "box_center"
+        },
+        "x_axis": {
+          "const": "length"
+        },
+        "y_axis": {
+          "const": "width"
+        },
+        "z_axis": {
+          "const": "height"
+        },
+        "face_normals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "front_large",
+            "back_large",
+            "long_side_a",
+            "long_side_b",
+            "short_side_a",
+            "short_side_b"
+          ],
+          "properties": {
+            "front_large": {
+              "const": "+z"
+            },
+            "back_large": {
+              "const": "-z"
+            },
+            "long_side_a": {
+              "const": "+y"
+            },
+            "long_side_b": {
+              "const": "-y"
+            },
+            "short_side_a": {
+              "const": "+x"
+            },
+            "short_side_b": {
+              "const": "-x"
+            }
+          }
+        }
+      }
+    },
+    "faces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "front_large",
+        "back_large",
+        "long_side_a",
+        "long_side_b",
+        "short_side_a",
+        "short_side_b"
+      ],
+      "properties": {
+        "front_large": {
+          "$ref": "#/$defs/face"
+        },
+        "back_large": {
+          "$ref": "#/$defs/face"
+        },
+        "long_side_a": {
+          "$ref": "#/$defs/face"
+        },
+        "long_side_b": {
+          "$ref": "#/$defs/face"
+        },
+        "short_side_a": {
+          "$ref": "#/$defs/face"
+        },
+        "short_side_b": {
+          "$ref": "#/$defs/face"
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "manifest_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "safeId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "file",
+        "sha256",
+        "width_px",
+        "height_px"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/safeId"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^images/(front_large|back_large|long_side_a|long_side_b|short_side_a|short_side_b)/[^/]+\\.(jpg|jpeg|png)$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "width_px": {
+          "type": "integer",
+          "minimum": 32
+        },
+        "height_px": {
+          "type": "integer",
+          "minimum": 32
+        }
+      }
+    },
+    "face": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pick_allowed",
+        "images"
+      ],
+      "properties": {
+        "pick_allowed": {
+          "type": "boolean"
+        },
+        "images": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/image"
+          }
+        }
+      }
+    },
+    "readyFace": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/face"
+        },
+        {
+          "if": {
+            "properties": {
+              "pick_allowed": {
+                "const": true
+              }
+            },
+            "required": [
+              "pick_allowed"
+            ]
+          },
+          "then": {
+            "properties": {
+              "images": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ready"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "faces": {
+            "properties": {
+              "front_large": {
+                "$ref": "#/$defs/readyFace"
+              },
+              "back_large": {
+                "$ref": "#/$defs/readyFace"
+              },
+              "long_side_a": {
+                "$ref": "#/$defs/readyFace"
+              },
+              "long_side_b": {
+                "$ref": "#/$defs/readyFace"
+              },
+              "short_side_a": {
+                "$ref": "#/$defs/readyFace"
+              },
+              "short_side_b": {
+                "$ref": "#/$defs/readyFace"
+              }
+            }
+          },
+          "integrity": {
+            "properties": {
+              "manifest_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

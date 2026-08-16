@@ -1,0 +1,33 @@
+{
+  "blister_count": 3,
+  "pack_orientation": "LABEL_FORWARD",
+  "pack_slots": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R09",
+    "R10",
+    "R11",
+    "R12",
+    "R13",
+    "R14",
+    "R15"
+  ],
+  "max_attempts": {
+    "pick_carton": 2,
+    "place_carton": 2,
+    "pick_item": 2,
+    "insert_item": 2,
+    "erect_carton": 2,
+    "close_carton": 2,
+    "stabilize_carton": 2,
+    "safe_move": 1,
+    "verify": 1
+  }
+}
+

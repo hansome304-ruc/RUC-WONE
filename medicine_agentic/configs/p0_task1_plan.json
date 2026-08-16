@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "inputs": {
+    "pose_store": "p0_poses.json",
+    "detection_report": "../artifacts/task1/latest/detection.json",
+    "task1_box_config": "task1_box.json",
+    "suction_tcp": "calibration/left_suction_tcp.json",
+    "log_root": "../artifacts/p0_task1_runs"
+  },
+  "safety": {
+    "dry_run": true,
+    "motion_commands_enabled": false,
+    "suction_commands_enabled": false,
+    "robot_adapter": "none"
+  },
+  "gates": {
+    "robot_id": "dosw1",
+    "required_poses": [
+      "home",
+      "task1_observe",
+      "pre_pick_carton",
+      "safe_transport_carton",
+      "pre_place_carton",
+      "place_slot_0_contact",
+      "post_place",
+      "recovery_high"
+    ],
+    "required_pose_status": "validated",
+    "require_pose_stable": true,
+    "require_collision_free": true,
+    "require_camera_extrinsic": true,
+    "require_suction_tcp": true,
+    "max_detection_age_s": 30.0
+  },
+  "plan": {
+    "pre_contact_height_m": 0.08,
+    "passive_compression_m": 0.004,
+    "probe_lift_m": 0.02,
+    "full_lift_m": 0.08,
+    "release_clearance_m": 0.004,
+    "pick_descent_speed_m_s": 0.01,
+    "place_descent_speed_m_s": 0.01,
+    "speed_scale": 0.1,
+    "slot_id": "slot_0"
+  }
+}

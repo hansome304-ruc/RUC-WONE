@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "name": "medicine_p0_pose_teaching",
+  "scene_id": "medicine_table_v1",
+  "poses": [
+    {
+      "name": "home",
+      "instruction": "双臂回到统一起止位；两侧工具互不遮挡，便于人工接管。"
+    },
+    {
+      "name": "task1_observe",
+      "instruction": "任务一观察位：前置相机完整看到药盒上料区和外箱；右臂避让。"
+    },
+    {
+      "name": "safe_transport_empty",
+      "instruction": "左吸盘空载的高位安全运输位；右臂保持任务一避让姿态。"
+    },
+    {
+      "name": "safe_transport_carton",
+      "instruction": "左吸盘携带药盒时的高位安全运输位，按药盒碰撞包络留足余量。"
+    },
+    {
+      "name": "pre_pick_carton",
+      "instruction": "药盒抓取标准进入位：吸盘轴竖直、位于上料区上方约80–100 mm；实际XY/Z将由视觉修正。"
+    },
+    {
+      "name": "pre_place_carton",
+      "instruction": "外箱第一个固定放置点上方约80–120 mm，左臂携盒姿态；右臂避让。"
+    },
+    {
+      "name": "place_slot_0_contact",
+      "instruction": "示教第一个放置位的释放高度和方向。吸盘TCP应位于药盒正常释放时的位置；此姿态只记录，不自动回放。"
+    },
+    {
+      "name": "post_place",
+      "instruction": "释放后沿竖直方向撤离30–50 mm的位置，避免带起药盒或碰撞箱壁。"
+    },
+    {
+      "name": "recovery_high",
+      "instruction": "抓取或放置异常时可到达的高位安全撤离姿态。"
+    },
+    {
+      "name": "pre_pick_blister",
+      "instruction": "右夹爪药板抓取的标准观察/进入位；左臂避让且相机能看到药板边缘。"
+    },
+    {
+      "name": "pre_insert",
+      "instruction": "双臂预插入状态：左臂将来稳定药盒，右夹爪位于盒口前约20–30 mm。"
+    }
+  ]
+}

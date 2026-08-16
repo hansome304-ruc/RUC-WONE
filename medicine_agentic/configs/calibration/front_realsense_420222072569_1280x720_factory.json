@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-07-31T10:53:04+08:00",
+  "source": "pyrealsense2_active_pipeline_profile",
+  "device": {
+    "serial": "420222072569",
+    "name": "Intel RealSense D435I",
+    "firmware_version": "5.15.1.55",
+    "librealsense_version": "2.56.5.9235"
+  },
+  "color": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "format": "bgr8",
+    "stream_index": 0,
+    "unique_id": 3,
+    "intrinsics": {
+      "fx": 912.0800170898438,
+      "fy": 911.6617431640625,
+      "cx": 643.6144409179688,
+      "cy": 366.7373962402344,
+      "distortion_model": "inverse_brown_conrady",
+      "distortion_coefficients": [0.0, 0.0, 0.0, 0.0, 0.0]
+    }
+  },
+  "depth": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "format": "z16",
+    "intrinsics": {
+      "fx": 643.70947265625,
+      "fy": 643.70947265625,
+      "cx": 645.6694946289062,
+      "cy": 357.7545166015625,
+      "distortion_model": "brown_conrady",
+      "distortion_coefficients": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "depth_scale_m_per_unit": 0.0010000000474974513
+  },
+  "depth_to_color": {
+    "rotation_row_major": [
+      0.9999865293502808,
+      -0.002615654841065407,
+      -0.004489181563258171,
+      0.002582075772807002,
+      0.9999687671661377,
+      -0.0074695805087685585,
+      0.004508579149842262,
+      0.007457888685166836,
+      0.9999620318412781
+    ],
+    "translation_m": [
+      0.01482780184596777,
+      0.0002974331728182733,
+      0.00021950903465040028
+    ]
+  },
+  "alignment": {
+    "target": "color",
+    "aligned_depth_width": 1280,
+    "aligned_depth_height": 720,
+    "aligned_depth_dtype": "uint16",
+    "aligned_depth_intrinsics": {
+      "fx": 912.0800170898438,
+      "fy": 911.6617431640625,
+      "cx": 643.6144409179688,
+      "cy": 366.7373962402344,
+      "distortion_model": "inverse_brown_conrady",
+      "distortion_coefficients": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "usage": "Use aligned-depth intrinsics directly; do not apply depth_to_color again."
+  },
+  "profile_approved_for_motion": false
+}

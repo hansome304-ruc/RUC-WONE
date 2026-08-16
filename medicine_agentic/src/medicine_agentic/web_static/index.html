@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#071411">
+    <meta
+      name="description"
+      content="固定工位双臂机器人医药打包任务的视觉、采集与操作员遥操控制台"
+    >
+    <title>Medicine Pack · 打包任务控制台</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/engineering.css">
+    <script src="/app.js?v=20260816-base-trajectory-v1" defer></script>
+    <script src="/engineering.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <header class="topbar">
+      <div class="brand" aria-label="Medicine Pack 打包控制台">
+        <span class="brand-mark" aria-hidden="true">MP</span>
+        <span class="brand-copy">
+          <strong>MEDICINE PACK</strong>
+          <small>双臂打包任务控制台</small>
+        </span>
+      </div>
+
+      <div class="topbar-status" aria-label="系统安全模式">
+        <div class="console-mode-switch" role="tablist" aria-label="控制台页面">
+          <button
+            class="console-mode-button is-active"
+            id="console-run-mode"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-console-mode="run"
+          >
+            运行
+          </button>
+          <button
+            class="console-mode-button"
+            id="console-engineering-mode"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-console-mode="engineering"
+          >
+            工程
+          </button>
+        </div>
+        <label class="act-model-selector" for="act-model-select">
+          <span>推理模型</span>
+          <select id="act-model-select" aria-describedby="act-model-state">
+            <option value="act1">ACT1 · 放说明书</option>
+            <option value="act2">ACT2 · 放药板</option>
+            <option value="act3">ACT3 · 关盒</option>
+          </select>
+          <small id="act-model-state">正在校验</small>
+        </label>
+        <span class="mode-chip mode-chip--locked" id="teleop-mode-chip">遥操未启动</span>
+        <span class="connection-state" id="connection-state">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="connection-label">正在连接</span>
+        </span>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <nav
+        class="engineering-tool-nav"
+        aria-label="工程工具"
+        data-console-surface="engineering"
+        hidden
+      >
+        <button class="engineering-tool-button is-active" type="button" data-engineering-tool-button="parameters">参数与位姿</button>
+        <button class="engineering-tool-button" type="button" data-engineering-tool-button="motion">手动控制</button>
+        <button class="engineering-tool-button" type="button" data-engineering-tool-button="teleop">遥操与录制</button>
+        <button class="engineering-tool-button" type="button" data-engineering-tool-button="base-trajectory">底盘轨迹</button>
+      </nav>
+
+      <section
+        class="task-switcher panel"
+        aria-labelledby="task-switcher-title"
+        data-console-surface="run"
+      >
+        <header class="task-switcher-header">
+          <div>
+            <p class="eyebrow">TASK ROUTER / EXPLICIT CONTEXT</p>
+            <h1 id="task-switcher-title">选择任务</h1>
+          </div>
+          <p>每个任务使用独立的识别、高度和技能流程。</p>
+        </header>
+        <div class="task-tabs" role="tablist" aria-label="打包任务选择">
+          <button
+            class="task-tab is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-task-id="task1"
+          >
+            <span class="task-tab-index">01</span>
+            <span class="task-tab-copy">
+              <strong>药盒装箱</strong>
+              <small>识别 → 吸取 → 双臂定位 → 换手 → 槽位识别 → 阻挡 → 放置</small>
+            </span>
+            <span class="task-tab-status task-tab-status--ready">吸取已接入</span>
+          </button>
+          <button
+            class="task-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-task-id="task2"
+          >
+            <span class="task-tab-index">02</span>
+            <span class="task-tab-copy">
+              <strong>装药板与闭盒</strong>
+              <small>left_watcher识别 → 吸取 → ACT1说明书 → ACT2药板 → ACT3闭盒 → 双臂退场 → 识别纸箱 → 入箱</small>
+            </span>
+            <span class="task-tab-status task-tab-status--ready">吸取已接入</span>
+          </button>
+          <button
+            class="task-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-task-id="task3"
+          >
+            <span class="task-tab-index">03</span>
+            <span class="task-tab-copy">
+              <strong>扁盒展开与闭盒</strong>
+              <small>观察位姿 → 识别 → 吸取 → 展开 → ACT3 → 双臂复位 → 识别纸箱 → 入箱 → 复位</small>
+            </span>
+            <span class="task-tab-status task-tab-status--ready">九步流程已接入</span>
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="engineering-panel panel"
+        id="engineering-parameters"
+        data-console-surface="engineering"
+        data-engineering-tool="parameters"
+        hidden
+      >
+        <header class="engineering-section-heading">
+          <div>
+            <p class="eyebrow">ENGINEERING / PARAMETERS</p>
+            <h2>参数与位姿</h2>
+          </div>
+          <p>任务高度、移动参数和具名 Pose。</p>
+        </header>
+        <div class="engineering-grid">
+          <label class="engineering-field">
+            <span>任务</span>
+            <select id="parameter-task">
+              <option value="task1">Task1 堆叠药盒</option>
+              <option value="task2">Task2 单层药盒</option>
+              <option value="task3">Task3 扁平药盒</option>
+            </select>
+          </label>
+          <label class="engineering-field" id="parameter-layer-field">
+            <span>Task1 层数</span>
+            <select id="parameter-layer">
+              <option value="1">1 层</option>
+              <option value="2">2 层</option>
+              <option value="3">3 层</option>
+            </select>
+          </label>
+          <label class="engineering-field">
+            <span id="parameter-contact-label">接触高度 / mm</span>
+            <input id="parameter-contact-z" type="number" step="0.1">
+          </label>
+          <label class="engineering-field">
+            <span>接近距离 / mm</span>
+            <input id="parameter-clearance" type="number" min="5" max="80" step="1">
+          </label>
+          <label class="engineering-field">
+            <span>试抬距离 / mm</span>
+            <input id="parameter-lift" type="number" min="5" max="50" step="1">
+          </label>
+          <label class="engineering-field">
+            <span>运输高度 Z / mm</span>
+            <input id="parameter-transit-z" type="number" min="0" max="350" step="1">
+          </label>
+          <div class="engineering-actions">
+            <button class="button button--quiet" id="parameter-capture-z" type="button">
+              使用当前左臂 Z
+            </button>
+            <button class="button button--primary" id="parameter-save" type="button">
+              保存参数
+            </button>
+          </div>
+        </div>
+        <div class="pose-editor">
+          <label class="engineering-field">
+            <span>机械臂</span>
+            <select id="pose-arm">
+              <option value="left">左臂</option>
+              <option value="right">右臂</option>
+            </select>
+          </label>
+          <label class="engineering-field">
+            <span>Pose 名称</span>
+            <input id="pose-name" type="text" value="safe_transport" maxlength="48">
+          </label>
+          <div class="engineering-actions">
+            <button class="button button--quiet" id="pose-read" type="button">读取当前 Pose</button>
+            <button class="button button--primary" id="pose-save" type="button">保存为具名 Pose</button>
+          </div>
+          <div class="pose-readout">
+            <code id="pose-current">尚未读取当前 Pose</code>
+            <span id="pose-saved">尚未保存具名 Pose</span>
+          </div>
+          <div class="pose-targets" id="pose-targets">
+            <span class="pose-targets-empty">尚无可到达位姿</span>
+          </div>
+        </div>
+        <p class="engineering-meta">
+          <strong id="parameter-revision">rev —</strong>
+          <span id="parameter-message">正在读取参数…</span>
+          <code id="parameter-path">—</code>
+          <button class="button button--quiet" id="parameter-show-all" type="button">
+            查看全部参数
+          </button>
+        </p>
+        <div class="parameter-overview" id="parameter-overview" hidden>
+          <div class="parameter-overview-head">
+            <strong>当前全部生效参数</strong>
+            <span>网页显示 mm；JSON/API 内部使用 m</span>
+          </div>
+          <div class="parameter-table-wrap">
+            <table class="parameter-table">
+              <thead>
+                <tr>
+                  <th>任务</th>
+                  <th>接触高度</th>
+                  <th>接近距离</th>
+                  <th>试抬距离</th>
+                  <th>运输 Z</th>
+                </tr>
+              </thead>
+              <tbody id="parameter-overview-body"></tbody>
+            </table>
+          </div>
+          <div class="pose-overview">
+            <div><strong>左臂 Pose</strong><span id="pose-overview-left">—</span></div>
+            <div><strong>右臂 Pose</strong><span id="pose-overview-right">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="workspace"
+        aria-labelledby="active-task-title"
+        data-console-surface="run"
+      >
+        <article class="camera-panel panel">
+          <header class="panel-header">
+            <div>
+              <p class="eyebrow">FRONT CAMERA / RGB-D</p>
+              <h2>前置相机</h2>
+            </div>
+            <div class="camera-meta" aria-live="polite">
+              <span id="camera-resolution">— × —</span>
+              <span id="camera-fps">— FPS</span>
+              <span class="live-badge" id="camera-live-badge">
+                <span aria-hidden="true"></span>
+                OFFLINE
+              </span>
+            </div>
+          </header>
+
+          <div class="camera-stage" id="camera-stage">
+            <img
+              id="camera-frame"
+              alt="前置相机的最新画面"
+              draggable="false"
+            >
+            <canvas id="detection-overlay" aria-hidden="true"></canvas>
+            <span id="fixed-axis-marker-indicator" aria-hidden="true"></span>
+            <div class="frame-reticle" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <div class="camera-unavailable" id="camera-unavailable">
+              <span class="offline-glyph" aria-hidden="true"></span>
+              <strong>等待前置相机</strong>
+              <small id="camera-offline-detail">正在读取独立打包服务</small>
+            </div>
+            <div class="frame-stamp">
+              <span>CAM / FRONT</span>
+              <time id="frame-time">尚无画面</time>
+            </div>
+          </div>
+
+          <footer class="camera-footer">
+            <div class="camera-identity">
+              <span>设备</span>
+              <strong id="camera-name">front</strong>
+              <small id="camera-serial">S/N —</small>
+            </div>
+            <div class="camera-identity">
+              <span>模式</span>
+              <strong id="camera-mode">只读采集</strong>
+              <small id="camera-alignment">Depth → Color</small>
+            </div>
+            <button class="button button--quiet" id="refresh-frame" type="button">
+              刷新画面
+            </button>
+          </footer>
+        </article>
+
+        <aside class="wrist-camera-rail panel" aria-label="腕部相机实时画面">
+          <header class="wrist-camera-rail__header">
+            <div>
+              <p class="eyebrow">WRIST CAMERAS</p>
+              <h2>腕部视角</h2>
+            </div>
+            <span class="wrist-camera-rail__count">02 LIVE</span>
+          </header>
+
+          <section class="wrist-camera-card" aria-labelledby="left-wrist-title">
+            <div class="wrist-camera-card__header">
+              <div>
+                <span class="wrist-camera-card__index">L</span>
+                <strong id="left-wrist-title">左腕相机</strong>
+              </div>
+              <span
+                class="wrist-camera-state"
+                id="left-wrist-camera-state"
+              >待连接</span>
+            </div>
+            <div class="wrist-camera-stage">
+              <img
+                id="left-wrist-camera"
+                alt="左腕相机实时画面"
+                draggable="false"
+              >
+              <div class="wrist-camera-placeholder" aria-hidden="true">
+                <span></span>
+                <small>LEFT WRIST</small>
+              </div>
+              <div class="wrist-camera-stamp">CAM / LEFT</div>
+            </div>
+          </section>
+
+          <section class="wrist-camera-card" aria-labelledby="right-wrist-title">
+            <div class="wrist-camera-card__header">
+              <div>
+                <span class="wrist-camera-card__index">R</span>
+                <strong id="right-wrist-title">右腕相机</strong>
+              </div>
+              <span
+                class="wrist-camera-state"
+                id="right-wrist-camera-state"
+              >待连接</span>
+            </div>
+            <div class="wrist-camera-stage">
+              <img
+                id="right-wrist-camera"
+                alt="右腕相机实时画面"
+                draggable="false"
+              >
+              <div class="wrist-camera-placeholder" aria-hidden="true">
+                <span></span>
+                <small>RIGHT WRIST</small>
+              </div>
+              <div class="wrist-camera-stamp">CAM / RIGHT</div>
+            </div>
+          </section>
+        </aside>
+
+        <aside class="task-panel panel" role="tabpanel">
+          <div class="task-heading">
+            <div class="task-number" id="active-task-number" aria-hidden="true">01</div>
+            <div>
+              <p class="eyebrow" id="active-task-kicker">TASK1 / 当前任务</p>
+              <h1 id="active-task-title">药盒装箱 · 吸取药盒</h1>
+            </div>
+          </div>
+
+          <p class="task-summary" id="active-task-summary">
+            从3×3×3药盒堆中选择当前最高层可抓目标，输出RGB-D三维中心，
+            按固定竖直姿态完成双吸盘吸紧和100 mm试抬。
+          </p>
+
+          <div class="safety-callout" role="status">
+            <span class="lock-glyph" aria-hidden="true"></span>
+            <div>
+              <strong id="active-task-readiness">Task1 吸取技能已接入</strong>
+              <span id="safety-detail">task1.pick_carton = true · chassis_api = false</span>
+            </div>
+          </div>
+
+          <div class="detection-card" aria-live="polite">
+            <div class="detection-head">
+              <span>最近一次视觉结果</span>
+              <span class="result-pill result-pill--idle" id="detection-state">未运行</span>
+            </div>
+            <div class="metric-grid">
+              <div class="metric metric--wide">
+                <span>三维基座坐标</span>
+                <strong id="base-coordinate">X — &nbsp; Y — &nbsp; Z —</strong>
+              </div>
+              <div class="metric">
+                <span id="detection-pixel-label">吸取像素</span>
+                <strong id="suction-pixel">—, —</strong>
+              </div>
+              <div class="metric">
+                <span>置信分数</span>
+                <strong id="detection-score">—</strong>
+              </div>
+              <div class="metric">
+                <span id="detection-count-label">单盒实例数量</span>
+                <strong id="candidate-count">—</strong>
+              </div>
+              <div class="metric">
+                <span id="detection-angle-label">表面倾角（未开放）</span>
+                <strong id="surface-tilt">—</strong>
+              </div>
+            </div>
+            <p class="detection-message" id="detection-message">
+              点击识别或开始执行任务后，才会获取并更新药盒坐标。
+            </p>
+          </div>
+
+          <div class="fixed-axis-card" aria-live="polite">
+            <div class="fixed-axis-head">
+              <div>
+                <span>固定双吸盘轴校验</span>
+                <small>真实杯心间距 50 mm · 吸盘直径 25 mm</small>
+              </div>
+              <span class="result-pill result-pill--idle" id="fixed-axis-state">待检测</span>
+            </div>
+            <div class="fixed-axis-body">
+              <div class="axis-schematic" aria-hidden="true">
+                <span class="axis-carton"></span>
+                <span class="axis-line"></span>
+                <i class="axis-cup axis-cup--a"></i>
+                <i class="axis-cup axis-cup--b"></i>
+                <b></b>
+              </div>
+              <dl class="fixed-axis-metrics">
+                <div><dt>杯心 A</dt><dd id="fixed-axis-cup-a">—, —</dd></div>
+                <div><dt>杯心 B</dt><dd id="fixed-axis-cup-b">—, —</dd></div>
+                <div><dt>图像轴角</dt><dd id="fixed-axis-angle">—</dd></div>
+                <div><dt>同面校验</dt><dd id="fixed-axis-clearance">—</dd></div>
+              </dl>
+            </div>
+            <p id="fixed-axis-message">等待药盒识别结果。</p>
+          </div>
+
+          <button class="button button--primary" id="run-detection" type="button">
+            <span class="button-icon" aria-hidden="true"></span>
+            <span>
+              <strong id="run-detection-label">识别堆叠药盒</strong>
+              <small id="detection-profile-label">task1_stack · 仅感知</small>
+            </span>
+          </button>
+
+          <button
+            class="button button--task1-pick"
+            id="run-task1-pick"
+            type="button"
+            disabled
+          >
+            <span>
+              <strong id="primary-skill-label">一键识别并吸取药盒</strong>
+              <small id="task1-pick-detail">当前任务的一键吸取接口</small>
+            </span>
+          </button>
+
+          <div class="flow">
+            <div class="workflow-current" aria-live="polite">
+              <p class="eyebrow" id="workflow-step-kicker">STEP 1 / 8</p>
+              <h2 id="workflow-step-title">药盒识别</h2>
+              <p id="workflow-step-description">
+                左臂先到 left_watcher，从无遮挡视角识别并缓存目标坐标。
+              </p>
+            </div>
+            <div class="flow-title">
+              <span id="active-flow-title">Task1 技能链</span>
+              <small id="active-flow-note">点击任一步骤可切换单步调试</small>
+            </div>
+            <ol class="flow-steps" id="active-flow-steps">
+              <li class="flow-step flow-step--available">
+                <span>1</span>
+                <div><strong>药盒识别</strong><small>已接入</small></div>
+              </li>
+              <li class="flow-step flow-step--available">
+                <span>2</span>
+                <div><strong>药盒吸取</strong><small>已接入</small></div>
+              </li>
+              <li class="flow-step flow-step--locked">
+                <span>3</span>
+                <div><strong>左臂固定 pose</strong><small>待示教</small></div>
+              </li>
+              <li class="flow-step flow-step--locked">
+                <span>4</span>
+                <div><strong>右臂固定 pose</strong><small>待示教</small></div>
+              </li>
+              <li class="flow-step flow-step--locked">
+                <span>5</span>
+                <div><strong>夹取并关闭吸盘</strong><small>待实现</small></div>
+              </li>
+              <li class="flow-step flow-step--locked">
+                <span>6</span>
+                <div><strong>识别箱子槽位</strong><small>待实现</small></div>
+              </li>
+              <li class="flow-step flow-step--locked">
+                <span>7</span>
+                <div><strong>左臂阻挡</strong><small>待示教</small></div>
+              </li>
+              <li class="flow-step flow-step--locked">
+                <span>8</span>
+                <div><strong>右臂放置</strong><small>待示教</small></div>
+              </li>
+            </ol>
+            <div class="workflow-auto" id="workflow-auto-panel">
+              <div class="workflow-auto-heading">
+                <span>A → B 自动执行</span>
+                <small>当前任务 · 严格串行 · 失败立即停止</small>
+              </div>
+              <div class="workflow-auto-controls">
+                <label>
+                  <span>起始 A</span>
+                  <select id="workflow-auto-start" aria-label="自动执行起始步骤"></select>
+                </label>
+                <span class="workflow-auto-arrow" aria-hidden="true">→</span>
+                <label>
+                  <span>结束 B</span>
+                  <select id="workflow-auto-end" aria-label="自动执行结束步骤"></select>
+                </label>
+                <button class="button button--primary" id="workflow-run-range" type="button">
+                  <span>
+                    <strong id="workflow-run-range-label">自动执行 A → B</strong>
+                    <small>每步成功后才继续</small>
+                  </span>
+                </button>
+                <button
+                  class="button button--quiet workflow-auto-stop"
+                  id="workflow-stop-range"
+                  type="button"
+                  hidden
+                >
+                  完成本步后停止
+                </button>
+              </div>
+              <p class="workflow-auto-hint" id="workflow-auto-hint">
+                请选择连续且已接入的步骤区间。
+              </p>
+            </div>
+            <div class="workflow-actions">
+              <button class="button button--quiet" id="workflow-previous" type="button">
+                上一步
+              </button>
+              <button class="button button--primary" id="workflow-run-step" type="button">
+                <span>
+                  <strong>执行当前步骤</strong>
+                  <small id="workflow-run-detail">只执行一步，完成后自动停住</small>
+                </span>
+              </button>
+              <button class="button button--quiet" id="workflow-next" type="button">
+                下一步
+              </button>
+            </div>
+            <div class="workflow-footer">
+              <span class="result-pill result-pill--idle" id="workflow-step-state">待执行</span>
+              <p id="workflow-message">选择步骤后点击“执行当前步骤”。</p>
+              <button class="button button--quiet" id="workflow-reset-progress" type="button">
+                从第 1 步开始
+              </button>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section
+        class="cartesian-jog-panel panel"
+        id="cartesian-jog-tools"
+        aria-labelledby="cartesian-jog-title"
+        data-console-surface="engineering"
+        data-engineering-tool="motion"
+        hidden
+      >
+        <header class="section-header cartesian-jog-header">
+          <div>
+            <p class="eyebrow">LEFT ARM / ORIENTATION-LOCKED CARTESIAN JOG</p>
+            <h2 id="cartesian-jog-title">共享工具 · 左吸盘 XYZ 微调</h2>
+          </div>
+          <div class="jog-header-badges">
+            <span class="jog-arm-badge">仅左臂</span>
+            <span
+              class="jog-state jog-state--offline"
+              id="jog-state"
+              aria-live="polite"
+            >
+              等待状态
+            </span>
+          </div>
+        </header>
+
+        <div
+          class="jog-alert is-hidden"
+          id="jog-alert"
+          role="alert"
+          aria-live="assertive"
+        ></div>
+
+        <p class="jog-intro">
+          将吸盘调为竖直向下后，一键锁定当前方向并开启 XYZ 单步移动。
+          Task1、Task2、Task3 共用这套工具。
+          仅保留工作区、IK、关节限位和实体急停保护。
+        </p>
+
+        <div class="jog-layout">
+          <div class="jog-status-card" aria-live="polite">
+            <div class="jog-status-heading">
+              <strong>左臂末端状态</strong>
+              <span id="jog-busy-state">空闲</span>
+            </div>
+            <dl class="jog-position-grid">
+              <div>
+                <dt>X</dt>
+                <dd id="jog-position-x">—</dd>
+              </div>
+              <div>
+                <dt>Y</dt>
+                <dd id="jog-position-y">—</dd>
+              </div>
+              <div>
+                <dt>Z</dt>
+                <dd id="jog-position-z">—</dd>
+              </div>
+            </dl>
+            <div class="jog-orientation">
+              <span>只读姿态记录 · 四元数 x / y / z / w</span>
+              <code id="jog-quaternion">尚未捕获方向</code>
+            </div>
+            <p class="jog-status-message" id="jog-status-message">
+              正在读取左臂定姿微调状态…
+            </p>
+          </div>
+
+          <div class="jog-workflow">
+            <ol class="jog-sequence" aria-label="定姿微调启用顺序" hidden>
+              <li>
+                <span>1</span>
+                <div>
+                  <strong>姿态捕获范围（只读）</strong>
+                  <small>只记录左臂当前位置和方向，不授权运动</small>
+                </div>
+              </li>
+              <li>
+                <span>2</span>
+                <div>
+                  <strong>任务一运动单独授权</strong>
+                  <small>每次点击只授权当前一个动作</small>
+                </div>
+              </li>
+              <li>
+                <span>3</span>
+                <div>
+                  <strong>任务一可达性</strong>
+                  <small>XY 交给 IK 与关节限位判断，仅保留 Z 防桌面下限</small>
+                </div>
+              </li>
+            </ol>
+
+            <div class="jog-setup-actions">
+              <button
+                class="button button--jog-capture"
+                id="jog-capture-orientation"
+                type="button"
+                hidden
+                disabled
+              >
+                <strong>只读捕获当前姿态</strong>
+                <small>记录位置与方向；不会移动或授权</small>
+              </button>
+
+              <fieldset class="jog-confirmations" id="jog-confirmations" hidden>
+                <legend>左臂运动前安全确认</legend>
+                <label>
+                  <input id="jog-area-clear" type="checkbox">
+                  <span>左臂与安全返回路径已清空</span>
+                </label>
+                <label>
+                  <input id="jog-estop-ready" type="checkbox">
+                  <span>实体急停已就绪</span>
+                </label>
+                <label>
+                  <input id="jog-suction-released" type="checkbox">
+                  <span>吸盘已释放，未携带药盒</span>
+                </label>
+              </fieldset>
+
+              <button
+                class="button button--jog-enable"
+                id="jog-enable"
+                type="button"
+                disabled
+              >
+                <strong>开启 XYZ 微调</strong>
+                <small>自动读取并锁定当前吸盘方向</small>
+              </button>
+
+              <button
+                class="button button--jog-restore"
+                id="jog-restore-safe"
+                type="button"
+                disabled
+              >
+                <strong>左臂安全竖直位</strong>
+                <small>回到已标定的竖直向下位姿 · 仅左臂</small>
+              </button>
+
+              <button
+                class="button button--jog-restore"
+                id="left-arm-reset-home"
+                type="button"
+                disabled
+              >
+                <strong>左臂复位</strong>
+                <small>回到与右臂相同的初始关节位 · 仅左臂</small>
+              </button>
+
+              <button
+                class="button button--jog-restore"
+                id="right-arm-reset-home"
+                type="button"
+                disabled
+              >
+                <strong>右臂复位</strong>
+                <small>回到统一初始关节位 · 仅右臂</small>
+              </button>
+
+            </div>
+          </div>
+
+          <div class="jog-controller" aria-label="共享左臂 XYZ 微调">
+            <div class="jog-controller-head">
+              <div>
+                <strong>固定姿态 XYZ 按住连续点动</strong>
+                <small>默认 5 mm，10 mm 用于快速接近，1 mm 用于最后对准 · Z− 自动限制为最多 5 mm</small>
+              </div>
+              <div class="jog-step-selector" role="radiogroup" aria-label="微调步长">
+                <label>
+                  <input type="radio" name="jog-step" value="1">
+                  <span>1 mm</span>
+                </label>
+                <label>
+                  <input type="radio" name="jog-step" value="2">
+                  <span>2 mm</span>
+                </label>
+                <label>
+                  <input type="radio" name="jog-step" value="5" checked>
+                  <span>5 mm</span>
+                </label>
+                <label>
+                  <input type="radio" name="jog-step" value="10">
+                  <span>10 mm</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="jog-axis-grid">
+              <div class="jog-axis-row">
+                <span class="jog-axis-label jog-axis-label--x">X</span>
+                <button
+                  class="button jog-move-button"
+                  type="button"
+                  data-jog-axis="x"
+                  data-jog-direction="-1"
+                  disabled
+                >
+                  X−
+                </button>
+                <button
+                  class="button jog-move-button"
+                  type="button"
+                  data-jog-axis="x"
+                  data-jog-direction="1"
+                  disabled
+                >
+                  X+
+                </button>
+              </div>
+              <div class="jog-axis-row">
+                <span class="jog-axis-label jog-axis-label--y">Y</span>
+                <button
+                  class="button jog-move-button"
+                  type="button"
+                  data-jog-axis="y"
+                  data-jog-direction="-1"
+                  disabled
+                >
+                  Y−
+                </button>
+                <button
+                  class="button jog-move-button"
+                  type="button"
+                  data-jog-axis="y"
+                  data-jog-direction="1"
+                  disabled
+                >
+                  Y+
+                </button>
+              </div>
+              <div class="jog-axis-row">
+                <span class="jog-axis-label jog-axis-label--z">Z</span>
+                <button
+                  class="button jog-move-button jog-move-button--warning"
+                  type="button"
+                  data-jog-axis="z"
+                  data-jog-direction="-1"
+                  aria-label="按住使左臂沿 Z 负方向连续下降"
+                  disabled
+                >
+                  <strong>Z− · 下降</strong>
+                  <small>注意桌面距离</small>
+                </button>
+                <button
+                  class="button jog-move-button"
+                  type="button"
+                  data-jog-axis="z"
+                  data-jog-direction="1"
+                  disabled
+                >
+                  Z+ · 上升
+                </button>
+              </div>
+            </div>
+
+            <div class="suction-test-panel" id="suction-tool" aria-live="polite">
+              <div class="suction-test-copy">
+                <strong>双吸盘测试</strong>
+                <span id="suction-state">正在读取串口状态…</span>
+                <small id="suction-detail">
+                  吸紧后选择 5 mm，短按上方 Z+ 四次完成 20 mm 试抬。
+                </small>
+              </div>
+              <div class="suction-test-actions">
+                <button
+                  class="button button--suction-on"
+                  id="suction-on"
+                  type="button"
+                  disabled
+                >
+                  吸紧
+                </button>
+                <button
+                  class="button button--suction-off"
+                  id="suction-off"
+                  type="button"
+                  disabled
+                >
+                  释放
+                </button>
+              </div>
+            </div>
+
+            <section class="engineering-gripper-lock" aria-labelledby="engineering-gripper-lock-title">
+              <div class="engineering-gripper-lock__copy">
+                <strong id="engineering-gripper-lock-title">吸盘夹爪模式</strong>
+                <span id="engineering-gripper-lock-chip" class="engineering-gripper-lock__chip">读取中</span>
+                <small id="engineering-gripper-lock-status" class="engineering-gripper-lock__status">
+                  正在读取 9999 夹爪锁状态…
+                </small>
+              </div>
+              <div class="engineering-gripper-lock__actions">
+                <input id="engineering-gripper-lock-arm" type="hidden" value="left">
+                <div class="engineering-gripper-arm-selector" role="group" aria-label="吸盘安装侧">
+                  <button class="engineering-gripper-arm-option is-active" type="button" data-gripper-lock-arm="left" aria-pressed="true">左手</button>
+                  <button class="engineering-gripper-arm-option" type="button" data-gripper-lock-arm="right" aria-pressed="false">右手</button>
+                </div>
+                <button class="button button--primary" id="engineering-gripper-lock-toggle" type="button">
+                  启用夹爪锁
+                </button>
+              </div>
+            </section>
+
+            <button
+              class="button button--jog-hold"
+              id="jog-hold-disable"
+              type="button"
+              disabled
+            >
+              <strong>退出并禁用微调</strong>
+              <small>停止后续点动；不能中断已下发的小步，也不是实体急停</small>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="recording-panel panel"
+        aria-labelledby="recording-title"
+        data-console-surface="engineering"
+        data-engineering-tool="teleop"
+        hidden
+      >
+        <header class="section-header recording-header">
+          <div>
+            <p class="eyebrow">TELEOP / ACT DATA</p>
+            <h2 id="recording-title">模型、遥操与数据采集</h2>
+          </div>
+          <span class="recording-state recording-state--idle" id="recording-state">
+            空闲
+          </span>
+        </header>
+
+        <div class="act-rollout-card" aria-live="polite">
+          <div class="act-rollout-overview">
+              <div class="act-rollout-heading">
+                <div>
+                  <p class="eyebrow">ACT CLOSED LOOP</p>
+                  <strong>连续模型控制</strong>
+                  <small>三视角输入 · 双臂动作 · 30 Hz 下发</small>
+                </div>
+                <span class="act-rollout-state act-rollout-state--idle" id="act-rollout-state">
+                  已停止
+                </span>
+              </div>
+              <p class="act-rollout-message" id="act-rollout-message">
+                正在读取模型与双臂控制状态…
+              </p>
+              <small class="act-rollout-safety">
+                停止会同步抢占后续动作，并让双臂保持当前位置。
+              </small>
+          </div>
+
+          <div class="act-rollout-console">
+              <dl class="act-rollout-metrics">
+                <div>
+                  <dt>推理轮次</dt>
+                  <dd id="act-rollout-inferences">0</dd>
+                </div>
+                <div>
+                  <dt>已发步数</dt>
+                  <dd id="act-rollout-commands">0</dd>
+                </div>
+                <div>
+                  <dt>推理延迟</dt>
+                  <dd id="act-rollout-latency">—</dd>
+                </div>
+              </dl>
+
+              <div class="act-frame-setting">
+                <div class="act-frame-setting__copy">
+                  <label for="act-execute-steps">每轮使用前多少帧</label>
+                  <small id="act-execute-steps-detail">执行前 20 帧后重新读取三路画面</small>
+                </div>
+                <div class="act-frame-setting__control">
+                  <input
+                    id="act-execute-steps"
+                    type="range"
+                    min="1"
+                    max="50"
+                    step="1"
+                    value="20"
+                    aria-describedby="act-execute-steps-detail"
+                  >
+                  <output id="act-execute-steps-value" for="act-execute-steps">20</output>
+                  <span id="act-execute-steps-total">/ 50</span>
+                </div>
+              </div>
+
+              <div class="act-rollout-actions">
+                <button
+                  class="button button--act-start"
+                  id="start-act-rollout"
+                  type="button"
+                  disabled
+                >
+                  <strong>开始模型推理</strong>
+                  <small>从当前状态推理 · 全部动作按 30 Hz 原值执行</small>
+                </button>
+                <button
+                  class="button button--act-stop"
+                  id="stop-act-rollout"
+                  type="button"
+                  disabled
+                >
+                  <strong>停止模型推理</strong>
+                  <small>立即保持当前位置</small>
+                </button>
+              </div>
+          </div>
+        </div>
+
+        <div class="recording-layout">
+          <div class="recording-controls">
+
+            <div class="teleop-launcher" aria-live="polite">
+              <div class="teleop-launcher-copy">
+                <div class="teleop-launcher-heading">
+                  <span class="teleop-state teleop-state--idle" id="teleop-state">
+                    未启动
+                  </span>
+                  <strong>主从臂遥操</strong>
+                </div>
+                <p id="teleop-message">正在读取旧遥操页面保存的主臂配置…</p>
+                <small id="teleop-endpoints">主臂 — · 执行臂检查中</small>
+                <div class="teleop-mode-settings">
+                  <label>
+                    <span>遥操模式</span>
+                    <select id="teleop-operator-mode">
+                      <option value="dual">双臂遥操</option>
+                      <option value="left_only">仅遥操左臂</option>
+                      <option value="right_only">仅遥操右臂</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span id="teleop-hold-pose-label">静止臂预设位姿</span>
+                    <select id="teleop-hold-pose" disabled>
+                      <option value="">双臂模式无需选择</option>
+                    </select>
+                  </label>
+                </div>
+                <small id="teleop-mode-detail">
+                  双臂均跟随；ACT 仍记录左右两臂。
+                </small>
+              </div>
+              <div class="teleop-actions">
+                <button
+                  class="button button--teleop"
+                  id="start-teleop"
+                  type="button"
+                  disabled
+                >
+                  <span class="teleop-glyph" aria-hidden="true"></span>
+                  <span>
+                    <strong>一键启动遥操</strong>
+                    <small>端点就绪后启动 Follow</small>
+                  </span>
+                </button>
+                <button
+                  class="button button--teleop-stop"
+                  id="stop-teleop"
+                  type="button"
+                  disabled
+                >
+                  正常停止
+                </button>
+                <button
+                  class="button button--teleop-restart"
+                  id="hard-restart-teleop"
+                  type="button"
+                  disabled
+                >
+                  <strong>彻底重启遥操</strong>
+                  <small>重建主臂、执行臂与 Follow</small>
+                </button>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>记录名称</span>
+              <input
+                id="recording-label"
+                type="text"
+                maxlength="48"
+                autocomplete="off"
+                placeholder="例如 act0_blister_01"
+              >
+            </label>
+
+            <label class="field">
+              <span>采集类型</span>
+              <select id="recording-purpose">
+                <option value="act_bimanual">ACT 双臂示教</option>
+                <option value="trajectory_both">普通双臂轨迹</option>
+                <option value="trajectory_left">仅左臂轨迹</option>
+                <option value="trajectory_right">仅右臂轨迹</option>
+              </select>
+            </label>
+
+            <div class="recording-actions">
+              <button class="button button--primary" id="start-recording" type="button">
+                <span class="record-dot" aria-hidden="true"></span>
+                <span>
+                  <strong>开始录制</strong>
+                  <small>O · RGB + 双臂 observation/action</small>
+                </span>
+              </button>
+              <button class="button button--stop" id="stop-recording" type="button" disabled>
+                <span class="stop-glyph" aria-hidden="true"></span>
+                <span>
+                  <strong>停止并保存</strong>
+                  <small>P · 保存为训练 episode</small>
+                </span>
+              </button>
+            </div>
+
+            <p class="recording-safety">
+              录制器只读取相机和机械臂反馈；遥操按钮只启动现有 Follow，
+              不自动重置 CAN 或重启机械臂服务。正常停止不是实体急停。
+            </p>
+          </div>
+
+          <div class="recording-monitor" aria-live="polite">
+            <div class="recording-monitor-heading">
+              <div>
+                <p class="eyebrow">LIVE RECORDING</p>
+                <strong>采集监视器</strong>
+              </div>
+              <small>相机与双臂反馈</small>
+            </div>
+            <dl class="recording-metrics">
+              <div>
+                <dt>已录时长</dt>
+                <dd id="recording-duration">00:00.0</dd>
+              </div>
+              <div>
+                <dt>RGB 帧</dt>
+                <dd id="recording-frames">0</dd>
+              </div>
+              <div>
+                <dt>左臂样本</dt>
+                <dd id="recording-left-samples">0</dd>
+              </div>
+              <div>
+                <dt>右臂样本</dt>
+                <dd id="recording-right-samples">0</dd>
+              </div>
+            </dl>
+            <p class="recording-message" id="recording-message">
+              请选择采集类型并填写名称，然后开始录制 ACT 或调试轨迹。
+            </p>
+            <div class="recording-path-row">
+              <code class="recording-path" id="recording-path">尚无保存路径</code>
+              <button
+                class="button button--quiet button--copy-path"
+                id="copy-recording-path"
+                type="button"
+                disabled
+              >
+                复制路径
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="recording-history">
+          <div class="recording-history-title">
+            <strong>最近保存</strong>
+            <span>可直接复制完整路径；不提供删除或轨迹回放</span>
+          </div>
+          <ul id="recording-list" class="recording-list">
+            <li class="recording-empty">尚无本项目录制数据</li>
+          </ul>
+        </div>
+      </section>
+
+      <section
+        class="base-trajectory-panel recording-panel panel"
+        aria-labelledby="base-trajectory-title"
+        data-console-surface="engineering"
+        data-engineering-tool="base-trajectory"
+        hidden
+      >
+        <header class="section-header recording-header">
+          <div>
+            <p class="eyebrow">BASE TRAJECTORY</p>
+            <h2 id="base-trajectory-title">底盘轨迹录制与回放</h2>
+          </div>
+          <span class="recording-state recording-state--idle" id="base-trajectory-state">
+            空闲
+          </span>
+        </header>
+
+        <div class="recording-layout base-trajectory-layout">
+          <div class="recording-controls">
+            <label class="field">
+              <span>轨迹名称</span>
+              <input
+                id="base-trajectory-label"
+                type="text"
+                maxlength="48"
+                autocomplete="off"
+                placeholder="例如 base_round_trip_01"
+              >
+            </label>
+
+            <div class="recording-actions">
+              <button class="button button--primary" id="base-trajectory-start" type="button" disabled>
+                <span class="record-dot" aria-hidden="true"></span>
+                <span>
+                  <strong>开始录底盘轨迹</strong>
+                  <small>只记录底盘位姿，不记录遥操 episode</small>
+                </span>
+              </button>
+              <button class="button button--stop" id="base-trajectory-stop" type="button" disabled>
+                <span class="stop-glyph" aria-hidden="true"></span>
+                <span>
+                  <strong>停止并保存</strong>
+                  <small>保存后可在下方 replay</small>
+                </span>
+              </button>
+            </div>
+
+            <p class="recording-safety">
+              回放会先做起点偏差和充电互锁预检，并要求输入确认串
+              <code>REPLAY_BASE_TRAJECTORY</code>。执行时仍通过 9999 底盘接口走原有安全限制。
+            </p>
+          </div>
+
+          <div class="recording-monitor" aria-live="polite">
+            <div class="recording-monitor-heading">
+              <div>
+                <p class="eyebrow">CHASSIS RECORDER</p>
+                <strong>底盘轨迹监视器</strong>
+              </div>
+              <small>位置 · 朝向 · 采样点</small>
+            </div>
+            <dl class="recording-metrics base-trajectory-metrics">
+              <div>
+                <dt>已录时长</dt>
+                <dd id="base-trajectory-duration">00:00.0</dd>
+              </div>
+              <div>
+                <dt>采样点</dt>
+                <dd id="base-trajectory-points">0</dd>
+              </div>
+              <div>
+                <dt>起点</dt>
+                <dd id="base-trajectory-start-pose">—</dd>
+              </div>
+              <div>
+                <dt>终点</dt>
+                <dd id="base-trajectory-end-pose">—</dd>
+              </div>
+            </dl>
+            <p class="recording-message" id="base-trajectory-message">
+              正在读取底盘轨迹状态…
+            </p>
+            <div class="recording-path-row">
+              <code class="recording-path" id="base-trajectory-path">尚无保存路径</code>
+              <button
+                class="button button--quiet button--copy-path"
+                id="copy-base-trajectory-path"
+                type="button"
+                disabled
+              >
+                复制路径
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="recording-history base-trajectory-history">
+          <div class="recording-history-title">
+            <strong>已保存底盘轨迹</strong>
+            <span>可复制路径；点击回放前需确认安全串</span>
+          </div>
+          <ul id="base-trajectory-list" class="recording-list base-trajectory-list">
+            <li class="recording-empty">尚无底盘轨迹数据</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <div>
+        <span class="footer-mark" aria-hidden="true"></span>
+        <span id="service-name">medicine-agentic</span>
+        <small id="service-version">version —</small>
+      </div>
+      <p>
+        独立端口 · 自主任务无运动接口 · 遥操独立启动 ·
+        <time id="status-time">尚未同步</time>
+      </p>
+    </footer>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>

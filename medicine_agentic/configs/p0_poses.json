@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "robot_id": "dosw1",
+  "revision": 0,
+  "updated_at": "2026-07-30T00:00:00.000Z",
+  "units": {
+    "joint_position": "rad",
+    "position": "m",
+    "quaternion": "xyzw",
+    "eef_feedback": "m",
+    "lift": "mm"
+  },
+  "poses": {},
+  "content_sha256": "a2fb1f921f094673cd3b779574d37eaeaefbb191d658d727e814290c6b367f53"
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "camera": {
+    "model": "Intel RealSense D435I",
+    "serial": "420222072569",
+    "stream": "color",
+    "width": 960,
+    "height": 540,
+    "fps": 15,
+    "format": "bgr8"
+  },
+  "source": {
+    "kind": "realsense_factory_profile",
+    "queried_from_device": true,
+    "checkerboard_recalibrated": false
+  },
+  "intrinsics": {
+    "matrix": [
+      [684.0599975585938, 0.0, 482.7108154296875],
+      [0.0, 683.7462768554688, 275.0530700683594],
+      [0.0, 0.0, 1.0]
+    ],
+    "distortion_model": "inverse_brown_conrady",
+    "distortion_coefficients": [0.0, 0.0, 0.0, 0.0, 0.0]
+  },
+  "packaging_output": {
+    "width": 848,
+    "height": 480,
+    "resize": "cv2.resize",
+    "scale_x": 0.8833333333333333,
+    "scale_y": 0.8888888888888888,
+    "principal_point_mapping": "pixel_center",
+    "matrix": [
+      [604.2529978434245, 0.0, 426.3362202962239],
+      [0.0, 607.7744683159722, 244.4360622829861],
+      [0.0, 0.0, 1.0]
+    ]
+  },
+  "safety": {
+    "approved_for_motion": false,
+    "requires_workspace_validation": true,
+    "note": "Factory intrinsics are connected for read-only camera-frame deprojection. Camera-to-base and suction-TCP validation remain required."
+  }
+}

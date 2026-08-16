@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "calibration_type": "same_marker_two_cup_axis",
+  "created_at_local": "20260803_152122",
+  "marker": {
+    "pixel": [
+      656,
+      380
+    ],
+    "depth_m": 1.0050000477349386,
+    "point_left_base_m": [
+      0.32964333346638863,
+      -0.30436378920591683,
+      0.02930013888266092
+    ],
+    "captured_at": 1785730955.5172985
+  },
+  "samples": {
+    "A": {
+      "cup": "A",
+      "flange_position_left_base_m": [
+        0.3316784786352236,
+        -0.27511110525192284,
+        0.04634819017109837
+      ],
+      "flange_quaternion_xyzw": [
+        -0.0002948898489402261,
+        0.7067153308915897,
+        -0.00018262291426649887,
+        0.7074979298709214
+      ],
+      "captured_at": 1785740207.5370402
+    },
+    "B": {
+      "cup": "B",
+      "flange_position_left_base_m": [
+        0.3171503911115524,
+        -0.3231982521558356,
+        0.04397797392873874
+      ],
+      "flange_quaternion_xyzw": [
+        -0.0002948898489402261,
+        0.7067153308915897,
+        -0.00018262291426649887,
+        0.7074979298709214
+      ],
+      "captured_at": 1785740486.1869745
+    }
+  },
+  "result": {
+    "valid": true,
+    "checks": {
+      "planar_spacing": true,
+      "orientation": true
+    },
+    "measured_spacing_mm": 50.233843417102136,
+    "raw_3d_spacing_mm": 50.289730059819185,
+    "orientation_delta_deg": 0.0,
+    "ignored_z_delta_mm": 2.3702162423596267,
+    "z_ignored": true,
+    "sampling_policy": "same_marker_xy_only",
+    "axis_local_xyz": [
+      -0.000326261083894489,
+      0.9572198915263881,
+      0.2893613188038704
+    ],
+    "approach_local_xyz": [
+      0.9999991595203986,
+      0.0006753927418987878,
+      -0.0011067082455358257
+    ]
+  }
+}

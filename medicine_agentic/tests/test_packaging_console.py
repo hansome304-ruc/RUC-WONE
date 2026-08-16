@@ -2884,6 +2884,16 @@ class Task2PickOffsetConfigTests(unittest.TestCase):
         )
 
 
+class ReplayGripperToleranceConfigTests(unittest.TestCase):
+    def test_allows_expected_object_contact_without_disabling_tracking(self) -> None:
+        config = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            config["trajectory_replay"]["max_gripper_tracking_error_m"],
+            0.015,
+        )
+
+
 class PackagingConsoleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -3096,7 +3106,7 @@ class PackagingConsoleTests(unittest.TestCase):
         )
         self.assertEqual(
             config["trajectory_replay"]["max_gripper_tracking_error_m"],
-            0.012,
+            0.015,
         )
         self.assertEqual(
             config["trajectory_replay"]["recording_profiles"],

@@ -771,11 +771,34 @@ class TeleopLauncher:
         try:
             env = os.environ.copy()
             env["LEAD_URL"] = lead_host
-            self._run_script(
-                self.hard_restart_script,
-                env,
-                self.hard_restart_timeout_s,
-            )
+            first_failure: TeleopLaunchUnavailable | None = None
+            for attempt in (1, 2):
+                try:
+                    self._run_script(
+                        self.hard_restart_script,
+                        env,
+                        self.hard_restart_timeout_s,
+                    )
+                    break
+                except TeleopLaunchUnavailable as exc:
+                    with self._lock:
+                        cancelled = (
+                            self._operation_id != operation_id
+                            or self._cancel_start
+                        )
+                        if not cancelled and attempt == 1:
+                            self._message = (
+                                "首次彻底重启未完成；正在再次完整清理并重试"
+                            )
+                            self._updated_at = time.time()
+                    if cancelled:
+                        raise
+                    if attempt == 2:
+                        raise TeleopLaunchUnavailable(
+                            "hard restart failed after one automatic full retry; "
+                            f"first attempt: {first_failure}; retry: {exc}"
+                        ) from exc
+                    first_failure = exc
             with self._lock:
                 cancelled = self._cancel_start
             if cancelled:

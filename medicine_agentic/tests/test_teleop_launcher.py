@@ -9,6 +9,7 @@ from unittest import mock
 
 from medicine_agentic.teleop_launcher import (
     TeleopLaunchConflict,
+    TeleopLaunchUnavailable,
     TeleopLauncher,
 )
 
@@ -255,6 +256,136 @@ class TeleopLauncherUnitTests(unittest.TestCase):
         self.assertEqual(script_name, "hard_restart_teleop_stack.sh")
         self.assertEqual(env["LEAD_URL"], "10.20.30.40")
         self.assertGreaterEqual(timeout_s, 60.0)
+
+    def test_hard_restart_retries_full_transaction_once(self) -> None:
+        follow_ready = False
+        hard_restart_attempts = 0
+        calls: list[str] = []
+
+        def check() -> dict:
+            return {
+                "ok": follow_ready,
+                "tmux": follow_ready,
+                "state": "running" if follow_ready else "missing",
+                "heartbeat_age_s": 0.1 if follow_ready else None,
+                "error": "",
+            }
+
+        def run_script(
+            script: Path,
+            env: dict[str, str],
+            timeout_s: float,
+        ) -> None:
+            nonlocal follow_ready, hard_restart_attempts
+            calls.append(script.name)
+            if script.name != "hard_restart_teleop_stack.sh":
+                return
+            hard_restart_attempts += 1
+            if hard_restart_attempts == 1:
+                raise TeleopLaunchUnavailable(
+                    "port 50052 address already in use"
+                )
+            follow_ready = True
+
+        with mock.patch.object(
+            self.launcher,
+            "_check_follow",
+            side_effect=check,
+        ), mock.patch.object(
+            self.launcher,
+            "_endpoints",
+            return_value=self.ready_endpoints,
+        ), mock.patch.object(
+            self.launcher,
+            "_stable_endpoints",
+            return_value=self.ready_endpoints,
+        ), mock.patch.object(
+            self.launcher,
+            "_run_script",
+            side_effect=run_script,
+        ), mock.patch.object(
+            self.launcher,
+            "_desired_matches",
+            return_value=True,
+        ):
+            response = self.launcher.hard_restart(
+                self.hard_restart_payload()
+            )
+            self.assertTrue(response["ok"])
+            deadline = time.monotonic() + 2.0
+            while (
+                self.launcher.status()["busy"]
+                and time.monotonic() < deadline
+            ):
+                time.sleep(0.01)
+            status = self.launcher.status()
+
+        self.assertEqual(
+            calls,
+            [
+                "hard_restart_teleop_stack.sh",
+                "hard_restart_teleop_stack.sh",
+            ],
+        )
+        self.assertEqual(status["state"], "running")
+        self.assertTrue(status["running"])
+        self.assertIsNone(status["error"])
+
+    def test_hard_restart_disarms_after_automatic_retry_fails(self) -> None:
+        calls: list[str] = []
+        hard_restart_attempts = 0
+
+        def run_script(
+            script: Path,
+            env: dict[str, str],
+            timeout_s: float,
+        ) -> None:
+            nonlocal hard_restart_attempts
+            calls.append(script.name)
+            if script.name != "hard_restart_teleop_stack.sh":
+                return
+            hard_restart_attempts += 1
+            raise TeleopLaunchUnavailable(
+                f"hard restart attempt {hard_restart_attempts} failed"
+            )
+
+        with mock.patch.object(
+            self.launcher,
+            "_check_follow",
+            return_value=self.stopped_check(),
+        ), mock.patch.object(
+            self.launcher,
+            "_endpoints",
+            return_value=self.ready_endpoints,
+        ), mock.patch.object(
+            self.launcher,
+            "_run_script",
+            side_effect=run_script,
+        ):
+            response = self.launcher.hard_restart(
+                self.hard_restart_payload()
+            )
+            self.assertTrue(response["ok"])
+            deadline = time.monotonic() + 2.0
+            while (
+                self.launcher.status()["busy"]
+                and time.monotonic() < deadline
+            ):
+                time.sleep(0.01)
+            status = self.launcher.status()
+
+        self.assertEqual(
+            calls,
+            [
+                "hard_restart_teleop_stack.sh",
+                "hard_restart_teleop_stack.sh",
+                "stop_teleop_follow.sh",
+            ],
+        )
+        self.assertEqual(status["state"], "error")
+        self.assertFalse(status["running"])
+        self.assertIn("first attempt", status["error"])
+        self.assertIn("retry", status["error"])
 
 
 if __name__ == "__main__":

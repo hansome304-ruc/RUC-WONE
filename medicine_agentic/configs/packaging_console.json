@@ -1290,7 +1290,7 @@
     "confirm_token": "PICK_TASK2_SINGLE_CARTON",
     "tcp_calibration": "calibration/left_suction_tcp.json",
     "target_offset_left_base_m": [
-      0.0,
+      0.005,
       0.01,
       0.0
     ],

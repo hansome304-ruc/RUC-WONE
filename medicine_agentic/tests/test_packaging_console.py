@@ -2874,6 +2874,16 @@ class RuntimePoseDeletionTests(unittest.TestCase):
         self.assertEqual(app.runtime_parameters.delete_pose.call_count, 1)
 
 
+class Task2PickOffsetConfigTests(unittest.TestCase):
+    def test_pick_center_moves_five_mm_away_from_robot(self) -> None:
+        config = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            config["task2_pick"]["target_offset_left_base_m"],
+            [0.005, 0.01, 0.0],
+        )
+
+
 class PackagingConsoleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -3039,7 +3049,7 @@ class PackagingConsoleTests(unittest.TestCase):
         )
         self.assertEqual(
             config["task2_pick"]["target_offset_left_base_m"],
-            [0.0, 0.01, 0.0],
+            [0.005, 0.01, 0.0],
         )
         self.assertEqual(
             config["task3_pick"]["target_offset_left_base_m"],

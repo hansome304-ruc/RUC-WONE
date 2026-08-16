@@ -1,0 +1,9 @@
+[Unit]
+Description=RUC-WONE independent video pipeline
+Wants=ruc-mediamtx.service ruc-video-api.service
+Wants=ruc-video-camera@front.service ruc-video-camera@left.service
+Wants=ruc-video-camera@right.service
+After=ruc-mediamtx.service ruc-video-api.service
+
+[Install]
+WantedBy=default.target

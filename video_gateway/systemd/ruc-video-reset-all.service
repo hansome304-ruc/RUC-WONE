@@ -1,0 +1,10 @@
+[Unit]
+Description=RUC-WONE reset all three D435i USB devices and video workers
+After=user@1000.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ruc-video-reset-all-cameras
+TimeoutStartSec=90
+StandardOutput=journal
+StandardError=journal

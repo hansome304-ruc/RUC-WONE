@@ -1,0 +1,70 @@
+{
+  "runtime_dir": "/dev/shm/ruc-video",
+  "rtsp_base": "rtsp://127.0.0.1:8554",
+  "sync": {
+    "max_skew_ms": 30.0,
+    "ring_size": 16
+  },
+  "encoder": {
+    "preferred": "vaapi",
+    "adaptive_bitrate": false,
+    "vaapi_device": "/dev/dri/renderD128",
+    "ffmpeg": "/usr/bin/ffmpeg"
+  },
+  "cameras": [
+    {
+      "name": "front",
+      "label": "Center",
+      "source_type": "realsense",
+      "source": "realsense:420222072569",
+      "serial": "420222072569",
+      "color_width": 1280,
+      "color_height": 720,
+      "capture_fps": 30,
+      "publish_fps": 15,
+      "depth_width": 1280,
+      "depth_height": 720,
+      "depth_fps": 30,
+      "bitrate_kbps": 2800,
+      "main_bitrate_kbps": 3200,
+      "aux_bitrate_kbps": 1800,
+      "depth": true
+    },
+    {
+      "name": "left",
+      "label": "Left",
+      "source_type": "realsense",
+      "source": "realsense:347622072392",
+      "serial": "347622072392",
+      "color_width": 1280,
+      "color_height": 720,
+      "capture_fps": 30,
+      "publish_fps": 15,
+      "depth_width": 480,
+      "depth_height": 270,
+      "depth_fps": 30,
+      "bitrate_kbps": 2600,
+      "main_bitrate_kbps": 3200,
+      "aux_bitrate_kbps": 2200,
+      "depth": true
+    },
+    {
+      "name": "right",
+      "label": "Right",
+      "source_type": "realsense",
+      "source": "realsense:347622071407",
+      "serial": "347622071407",
+      "color_width": 1280,
+      "color_height": 720,
+      "capture_fps": 30,
+      "publish_fps": 15,
+      "depth_width": 480,
+      "depth_height": 270,
+      "depth_fps": 30,
+      "bitrate_kbps": 2600,
+      "main_bitrate_kbps": 3200,
+      "aux_bitrate_kbps": 2200,
+      "depth": true
+    }
+  ]
+}

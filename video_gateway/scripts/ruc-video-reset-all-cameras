@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+status_path='/run/ruc-video-reset-all-status.json'
+lock_path='/run/lock/ruc-video-reset-all.lock'
+user_name='ubuntu'
+user_id='1000'
+runtime_dir="/run/user/${user_id}"
+started_at="$(date +%s)"
+completed='false'
+
+camera_units=(
+  'ruc-video-camera@front.service'
+  'ruc-video-camera@left.service'
+  'ruc-video-camera@right.service'
+)
+
+usb_ids=('2-2.2' '2-2.3' '2-2.4')
+
+write_status() {
+  local state="$1"
+  local message="$2"
+  local live_count="${3:-0}"
+  local finished_at='null'
+  if [ "$state" = 'success' ] || [ "$state" = 'failed' ]; then
+    finished_at="$(date +%s)"
+  fi
+  python3 - "$status_path" "$state" "$message" "$started_at" "$finished_at" "$live_count" <<'PY'
+import json
+import os
+import sys
+import tempfile
+
+path, state, message, started_at, finished_at, live_count = sys.argv[1:]
+payload = {
+    "state": state,
+    "message": message,
+    "started_at": int(started_at),
+    "finished_at": None if finished_at == "null" else int(finished_at),
+    "live_count": int(live_count),
+}
+directory = os.path.dirname(path)
+fd, temporary = tempfile.mkstemp(prefix=".ruc-video-reset-", dir=directory)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.chmod(temporary, 0o644)
+    os.replace(temporary, path)
+finally:
+    try:
+        os.unlink(temporary)
+    except FileNotFoundError:
+        pass
+PY
+}
+
+finish_status() {
+  local rc="$?"
+  if [ "$completed" != 'true' ]; then
+    write_status 'failed' "三相机复位失败（退出码 ${rc}）" 0 || true
+  fi
+  exit "$rc"
+}
+trap finish_status EXIT
+
+exec 9>"$lock_path"
+if ! flock -n 9; then
+  write_status 'failed' '已有三相机复位任务正在运行' 0
+  exit 75
+fi
+
+user_systemctl() {
+  sudo -u "$user_name" env \
+    XDG_RUNTIME_DIR="$runtime_dir" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=${runtime_dir}/bus" \
+    systemctl --user "$@"
+}
+
+validate_usb_device() {
+  local usb_id="$1"
+  local device_path="/sys/bus/usb/devices/${usb_id}"
+  local vendor
+  local product
+  test -d "$device_path"
+  vendor="$(cat "${device_path}/idVendor")"
+  product="$(cat "${device_path}/idProduct")"
+  case "$usb_id" in
+    2-2.2|2-2.3|2-2.4)
+      test "$vendor:$product" = '8086:0b3a'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  echo "validated ${usb_id}: $(cat "${device_path}/product")"
+}
+
+write_status 'resetting' '正在校验三台D435i USB设备' 0
+for usb_id in "${usb_ids[@]}"; do
+  validate_usb_device "$usb_id"
+done
+
+write_status 'resetting' '正在停止三路相机采集服务' 0
+user_systemctl stop "${camera_units[@]}"
+
+write_status 'resetting' '正在复位三台D435i USB连接' 0
+for usb_id in "${usb_ids[@]}"; do
+  printf '%s' "$usb_id" > /sys/bus/usb/drivers/usb/unbind
+done
+sleep 2
+for usb_id in "${usb_ids[@]}"; do
+  printf '%s' "$usb_id" > /sys/bus/usb/drivers/usb/bind
+done
+udevadm settle --timeout=15 || true
+sleep 3
+
+for usb_id in "${usb_ids[@]}"; do
+  validate_usb_device "$usb_id"
+done
+
+write_status 'resetting' '正在启动三路相机采集服务' 0
+user_systemctl start "${camera_units[@]}"
+
+for attempt in $(seq 1 30); do
+  health="$(curl -fsS http://127.0.0.1:8877/healthz || true)"
+  live_count="$(python3 -c 'import json,sys; print(int(json.loads(sys.stdin.read()).get("live_count", 0)))' <<<"$health" 2>/dev/null || echo 0)"
+  write_status 'resetting' "正在等待三路画面恢复（${live_count}/3）" "$live_count"
+  if [ "$live_count" -eq 3 ]; then
+    sleep 2
+    health="$(curl -fsS http://127.0.0.1:8877/healthz || true)"
+    live_count="$(python3 -c 'import json,sys; print(int(json.loads(sys.stdin.read()).get("live_count", 0)))' <<<"$health" 2>/dev/null || echo 0)"
+    if [ "$live_count" -eq 3 ]; then
+      write_status 'success' '三台D435i均已恢复' 3
+      completed='true'
+      echo 'THREE_CAMERA_RESET_OK'
+      exit 0
+    fi
+  fi
+  sleep 2
+done
+
+write_status 'failed' '复位完成，但三路画面未能全部恢复' "$live_count"
+exit 1

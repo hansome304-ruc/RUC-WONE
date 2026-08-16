@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RUC-WONE Standalone Teleop</title>
+    <link rel="stylesheet" href="/styles.css?v=20260730-suction-mode-v1">
+    <link rel="stylesheet" href="/teleop-only.css?v=20260730-standalone-v1">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <section class="runtime-terminal" id="runtime-terminal" aria-label="脚本运行终端">
+          <header class="runtime-terminal-head">
+            <div class="runtime-terminal-title">
+              <span class="terminal-live-dot" id="terminal-live-dot"></span>
+              <strong>C:\RUC-WONE\teleop-logs&gt;</strong>
+              <span id="terminal-connection">正在连接</span>
+            </div>
+            <div class="runtime-terminal-tools">
+              <select id="terminal-source" aria-label="日志来源">
+                <option value="current">当前任务</option>
+              </select>
+              <label class="terminal-autoscroll">
+                <input id="terminal-autoscroll" type="checkbox" checked>
+                自动滚动
+              </label>
+              <button id="terminal-pause" type="button">暂停</button>
+              <button id="terminal-refresh" type="button">刷新</button>
+              <button id="terminal-clear" type="button">清屏</button>
+            </div>
+          </header>
+          <pre class="runtime-terminal-output" id="terminal-output">C:\RUC-WONE&gt; 正在连接统一日志接口…</pre>
+        </section>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div class="topbar-identity">
+            <span class="brand-mark topbar-brand-mark">RW</span>
+            <div class="topbar-brand-copy">
+              <strong>RUC-WONE</strong>
+              <small>Robot Console</small>
+            </div>
+            <div class="topbar-profile">
+              <strong id="profile-label">local</strong>
+              <span id="role-label">role: local</span>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <nav class="topbar-nav" aria-label="主页面">
+              <button class="nav-link is-active" data-view="teleop-view">Teleop :9999</button>
+            </nav>
+            <button type="button" id="estop-reset-button" class="estop-reset-button" hidden>恢复控制</button>
+            <button
+              class="danger"
+              id="estop-button"
+              title="锁存式全局急停；恢复控制前需要现场安全确认"
+              aria-label="全局急停：停止并锁存全部运动控制"
+            >全局急停</button>
+          </div>
+        </header>
+
+        <section
+          id="arm-temperature-alert"
+          class="arm-temperature-alert"
+          role="alert"
+          aria-live="assertive"
+          hidden
+        >
+          <div class="arm-temperature-alert-icon" aria-hidden="true">⚠</div>
+          <div>
+            <strong>机械臂高温：立即停止操作</strong>
+            <p id="arm-temperature-alert-detail">
+              停止 Follow 和机械臂操作，支撑机械臂后停止服务，待充分冷却再检查。
+            </p>
+          </div>
+        </section>
+
+        <section
+          id="arm-joint-limit-alert"
+          class="arm-joint-limit-alert"
+          role="alert"
+          aria-live="assertive"
+          hidden
+        >
+          <div class="arm-joint-limit-alert-icon" aria-hidden="true">⚠</div>
+          <div>
+            <strong id="arm-joint-limit-alert-title">机械臂接近限位：请减速回退</strong>
+            <p id="arm-joint-limit-alert-detail"></p>
+          </div>
+        </section>
+
+        <section id="generalist-view" class="section workspace-view">
+          <div class="section-head generalist-head">
+            <div>
+              <h2>Generalist 总览</h2>
+              <p>负责开机检查、设备状态和遥操作服务启停；实际控制集中在 Teleop。</p>
+            </div>
+            <div class="button-row">
+              <span class="readiness-badge checking" id="gen-readiness">正在检查</span>
+              <button id="gen-refresh-all">刷新全部状态</button>
+            </div>
+          </div>
+
+          <div class="generalist-status-sections">
+            <section class="generalist-status-section">
+              <div class="generalist-status-row">
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-follower-service-dot"></span>
+                  <h3>从臂服务</h3>
+                  <p id="gen-follower-service-summary">正在读取</p>
+                  <div class="mini-list" id="gen-follower-service-detail"></div>
+                </article>
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-lead-service-dot"></span>
+                  <h3>主臂服务</h3>
+                  <p id="gen-lead-service-summary">正在读取</p>
+                  <div class="mini-list" id="gen-lead-service-detail"></div>
+                </article>
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-follow-dot"></span>
+                  <h3>主从遥操作</h3>
+                  <p id="gen-follow-summary">正在读取</p>
+                  <div class="mini-list" id="gen-follow-detail"></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="generalist-status-section">
+              <div class="generalist-status-row">
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-left-arm-dot"></span>
+                  <h3>左从臂</h3>
+                  <p id="gen-left-arm-summary">正在读取</p>
+                  <div class="mini-list" id="gen-left-arm-detail"></div>
+                </article>
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-right-arm-dot"></span>
+                  <h3>右从臂</h3>
+                  <p id="gen-right-arm-summary">正在读取</p>
+                  <div class="mini-list" id="gen-right-arm-detail"></div>
+                </article>
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-camera-dot"></span>
+                  <h3>摄像头</h3>
+                  <p id="gen-camera-summary">正在连接</p>
+                  <div class="mini-list" id="gen-camera-detail"></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="generalist-status-section">
+              <div class="generalist-status-row">
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-safety-dot"></span>
+                  <h3>安全闸门</h3>
+                  <p id="gen-safety-summary">正在读取</p>
+                  <div class="mini-list" id="gen-safety-detail"></div>
+                </article>
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-base-dot"></span>
+                  <h3>底盘 / ROS</h3>
+                  <p id="gen-base-summary">正在读取</p>
+                  <div class="mini-list" id="gen-base-detail"></div>
+                </article>
+                <article class="status-card generalist-status-card">
+                  <span class="status-dot muted" id="gen-lift-dot"></span>
+                  <h3>升降杆</h3>
+                  <p id="gen-lift-summary">正在读取</p>
+                  <div class="mini-list" id="gen-lift-detail"></div>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <div class="generalist-system-bar" aria-label="系统与感知服务">
+            <article class="system-service-compact">
+              <span class="status-dot muted" id="zero-dot"></span>
+              <div class="system-service-copy">
+                <strong>ZeroGrasp 感知</strong>
+                <span id="zero-summary">正在读取</span>
+                <code id="zero-url"></code>
+              </div>
+              <div class="button-row system-service-actions">
+                <button data-action="zero-check">检查</button>
+                <button data-action="zero-start">启动</button>
+                <button data-action="zero-stop" class="warn">停止</button>
+              </div>
+            </article>
+            <article class="system-service-compact">
+              <span class="status-dot muted" id="network-dot"></span>
+              <div class="system-service-copy">
+                <strong>控制台网络</strong>
+                <span id="network-summary">正在读取</span>
+                <code id="robot-url"></code>
+              </div>
+            </article>
+          </div>
+
+          <div class="generalist-telemetry" aria-label="机器人实时遥测">
+            <div><span>里程 X</span><strong id="gen-odom-x">--</strong><small>m</small></div>
+            <div><span>里程 Y</span><strong id="gen-odom-y">--</strong><small>m</small></div>
+            <div><span>航向</span><strong id="gen-odom-yaw">--</strong><small>deg</small></div>
+            <div><span>线速度</span><strong id="gen-odom-speed">--</strong><small>m/s</small></div>
+            <div><span>角速度</span><strong id="gen-odom-wz">--</strong><small>rad/s</small></div>
+            <div><span>升降高度</span><strong id="gen-lift-position-overview">--</strong><small>mm</small></div>
+            <div class="telemetry-alert"><span>碰撞状态</span><strong id="gen-collision">--</strong></div>
+          </div>
+
+          <div class="generalist-service-area">
+            <article class="tool-panel generalist-arm-service-panel teleop-arm-service-panel" id="teleop-arm-service-panel">
+              <div class="panel-title-row arm-service-heading">
+                <div>
+                  <h3>机械臂遥操服务</h3>
+                  <p>按 1 → 2 → 3 依次启动；只有远程主臂需要填写额外配置。</p>
+                </div>
+                <div class="service-flow-guide" aria-label="机械臂遥操启动顺序">
+                  <span>1 从臂</span>
+                  <b>→</b>
+                  <span>2 主臂</span>
+                  <b>→</b>
+                  <span>3 Follow</span>
+                </div>
+              </div>
+              <div class="arm-service-columns">
+                <section class="arm-service-block" data-service-step="1">
+                  <div class="service-step-head">
+                    <span class="service-step-index">1</span>
+                    <div>
+                      <strong>启动两个从臂</strong>
+                      <p>本机固定使用 can_left / can_right；停止时自动清理从臂容器。</p>
+                    </div>
+                    <div class="follower-side-status-list" aria-label="左右从臂连接状态">
+                      <span class="service-inline-state is-idle" id="gen-follower-left-inline-status">L 未检查</span>
+                      <span class="service-inline-state is-idle" id="gen-follower-right-inline-status">R 未检查</span>
+                    </div>
+                  </div>
+                  <button class="arm-service-primary" data-gen-arm-service="follower-start">启动从臂</button>
+                  <div class="button-row service-secondary-actions">
+                    <button data-gen-arm-service="follower-check">检查从臂</button>
+                    <button data-gen-arm-service="follower-stop" class="warn">停止从臂</button>
+                  </div>
+                </section>
+
+                <section class="arm-service-block" data-service-step="2">
+                  <div class="service-step-head">
+                    <span class="service-step-index">2</span>
+                    <div>
+                      <strong>启动或连接两个主臂</strong>
+                      <p>自动检测本机主臂；没有时连接远端。</p>
+                    </div>
+                    <span class="service-inline-state is-idle" id="gen-lead-inline-status">未检查</span>
+                  </div>
+                  <button class="arm-service-primary" data-gen-arm-service="lead-start">启动 / 连接主臂</button>
+                  <div class="button-row service-secondary-actions">
+                    <button data-gen-arm-service="lead-check">检查主臂</button>
+                    <button data-gen-arm-service="lead-stop" class="warn">停止主臂</button>
+                  </div>
+                  <details class="remote-lead-config">
+                    <summary>
+                      <span>远程主臂配置</span>
+                      <small>本机没有主臂 CAN 时展开</small>
+                    </summary>
+                    <div class="remote-lead-fields">
+                      <label>远端主臂机 IP
+                        <input id="gen-remote-lead-host" placeholder="例如 10.47.41.144">
+                      </label>
+                      <label>SSH 目标（可选）
+                        <input id="gen-lead-ssh-target" placeholder="例如 ubuntu@10.47.41.144">
+                      </label>
+                      <div class="form-grid compact">
+                        <label>左主臂 CAN
+                          <input id="gen-remote-left-can" value="can0">
+                        </label>
+                        <label>右主臂 CAN
+                          <input id="gen-remote-right-can" value="can1">
+                        </label>
+                      </div>
+                      <p>SSH 留空时只检查远端 50050 / 50052；填写后可远程启动 Docker。</p>
+                    </div>
+                  </details>
+                </section>
+
+                <section class="arm-service-block follow-service-block" data-service-step="3">
+                  <div class="service-step-head">
+                    <span class="service-step-index">3</span>
+                    <div>
+                      <strong>开始主从跟随</strong>
+                      <p>前两步均就绪后，最后启动 Follow。</p>
+                    </div>
+                    <span class="service-inline-state is-idle" id="gen-follow-inline-status">未运行</span>
+                  </div>
+                  <label>主臂地址
+                    <input id="gen-lead-url" placeholder="本机填 localhost，远程填主臂机 IP">
+                  </label>
+                  <button class="arm-service-primary" data-gen-service="teleop-start">启动 Follow</button>
+                  <div class="button-row service-secondary-actions">
+                    <button data-gen-service="teleop-check">检查 Follow</button>
+                    <button data-gen-service="teleop-stop" class="warn">停止 Follow</button>
+                  </div>
+                  <p class="protocol-note" id="gen-lead-protocol-note">
+                    按 REMOTE_TELEOP.md：远端主臂开放 50050/50052，本机运行 Follow。
+                  </p>
+                </section>
+              </div>
+            </article>
+
+          </div>
+        </section>
+
+        <section id="map-view" class="section workspace-view" hidden>
+          <div class="section-head">
+            <h2>地图导航</h2>
+            <button id="refresh-ideal-runs">刷新记录</button>
+          </div>
+          <div class="map-layout">
+            <div class="map-stage">
+              <canvas id="ideal-map-canvas" width="720" height="720"></canvas>
+              <div class="tool-panel map-stage-panel ideal-avoidance-panel">
+              <h3>前向避障与重规划</h3>
+                <div class="form-grid ideal-avoidance-grid">
+                  <label>雷达话题
+                    <input id="ideal-scan-topic" type="text" value="/camera_scan" spellcheck="false">
+                  </label>
+                  <label>停车距离 m
+                    <input id="ideal-stop-distance" type="number" min="0.35" max="2.00" step="0.05" value="0.35">
+                  </label>
+                  <label>前向扇区 deg
+                    <input id="ideal-front-deg" type="number" min="5" max="180" step="5" value="60">
+                  </label>
+                  <label>数据超时 s
+                    <input id="ideal-stale-s" type="number" min="0.1" max="10" step="0.1" value="1.0">
+                  </label>
+                  <label>遇障标记半径 m
+                    <input id="ideal-replan-radius" type="number" min="0.00" max="2.00" step="0.05" value="0.20">
+                  </label>
+                  <label>最大重规划次数
+                    <input id="ideal-max-replans" type="number" min="0" max="10" step="1" value="3">
+                  </label>
+                </div>
+                <div class="toggle-row">
+                  <label><input id="ideal-auto-replan" type="checkbox"> 自动遇障重规划</label>
+                </div>
+                <div class="mini-list" id="ideal-avoidance-summary"></div>
+              </div>
+              <div class="tool-panel map-stage-panel ideal-absolute-panel">
+                <h3>小地图定位与纠偏</h3>
+                <div class="toggle-row">
+                  <label><input id="ideal-absolute-trim-enabled" type="checkbox" checked> 定位可用时执行终点二次校验</label>
+                </div>
+                <div class="button-row">
+                  <button id="refresh-ideal-absolute">刷新定位</button>
+                  <button id="run-ideal-absolute-trim">终点二次校验</button>
+                </div>
+                <div class="mini-list" id="ideal-absolute-summary"></div>
+              </div>
+            </div>
+            <div class="map-side">
+              <div class="tool-panel">
+                <h3>规划起点 / 目标点</h3>
+                <div class="form-grid compact">
+                  <label>起点 X
+                    <input id="ideal-start-x" type="number" min="0.00" max="4.00" step="0.01" value="2.00">
+                  </label>
+                  <label>起点 Y
+                    <input id="ideal-start-y" type="number" min="0.00" max="4.00" step="0.01" value="0.00">
+                  </label>
+                  <label>目标 X
+                    <input id="ideal-goal-x" type="number" min="0.40" max="3.60" step="0.01" value="2.00">
+                  </label>
+                  <label>目标 Y
+                    <input id="ideal-goal-y" type="number" min="0.40" max="3.60" step="0.01" value="0.60">
+                  </label>
+                  <label>线速度
+                    <input id="ideal-max-speed" type="number" min="0.01" max="0.10" step="0.01" value="0.04">
+                  </label>
+                  <label>角速度
+                    <input id="ideal-max-yaw" type="number" min="0.01" max="0.30" step="0.01" value="0.12">
+                  </label>
+                </div>
+                <div class="toggle-row">
+                  <label><input id="ideal-avoid-obstacles" type="checkbox"> 前方急停 / 避障</label>
+                </div>
+                <div class="button-row">
+                  <button id="new-ideal-route">新建路</button>
+                  <button id="new-ideal-point">新建点</button>
+                  <button id="remove-ideal-waypoint">删除最后点</button>
+                  <button id="clear-ideal-route">清空路</button>
+                </div>
+                <div class="button-row">
+                  <button id="execute-ideal-path" class="danger">执行路</button>
+                  <button id="replay-current-path">预演路径</button>
+                </div>
+                <div class="mini-list" id="ideal-path-summary"></div>
+              </div>
+              <div class="tool-panel">
+                <h3>路径规划</h3>
+                <div class="form-grid compact map-plan-grid">
+                  <label>地图文件
+                    <input id="map-plan-image" value="locomotion/maps/rucwone_top_half_6x4.pgm">
+                  </label>
+                  <label>分辨率 m/px
+                    <input id="map-plan-resolution" type="number" min="0.001" step="0.001" value="0.01">
+                  </label>
+                  <label>机器人 x 方向长度 m
+                    <input id="map-plan-size-x" type="number" min="0.01" step="0.01" value="0.90">
+                  </label>
+                  <label>机器人 y 方向宽度 m
+                    <input id="map-plan-size-y" type="number" min="0.01" step="0.01" value="0.80">
+                  </label>
+                  <label>额外间隙 m
+                    <input id="map-plan-clearance" type="number" min="0" step="0.01" value="0.00">
+                  </label>
+                </div>
+                <div class="toggle-row">
+                  <label><input id="map-plan-avoid-obstacles" type="checkbox"> 前方急停 / 避障</label>
+                </div>
+                <div class="button-row">
+                  <button id="run-map-plan">规划路线</button>
+                  <button id="execute-map-plan" class="danger">执行规划路线</button>
+                  <button id="clear-map-plan" class="ghost">清除预览</button>
+                </div>
+                <div class="mini-list map-plan-summary" id="map-plan-summary"></div>
+                <div class="route-list map-plan-result" id="map-plan-result"></div>
+              </div>
+              <div class="tool-panel">
+                <h3>路 / 点 / 路径</h3>
+                <div class="route-list" id="ideal-route-list"></div>
+              </div>
+              <div class="tool-panel">
+                <h3>小地图当前位置</h3>
+                <div class="mini-list" id="ideal-memory-summary"></div>
+                <div class="button-row">
+                  <button id="reset-ideal-start">重置起点</button>
+                  <button id="reset-ideal-pose" class="warn" title="生成从当前位置回到初始点的路线，执行后机器人会移动">生成复位路线</button>
+                </div>
+              </div>
+              <div class="tool-panel">
+                <h3>轨迹记录</h3>
+                <select id="ideal-run-select"></select>
+                <div class="button-row">
+                  <button id="load-ideal-run">加载</button>
+                  <button id="replay-ideal-run">回放</button>
+                </div>
+                <div class="mini-list" id="ideal-run-summary"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="teleop-view" class="section workspace-view" hidden>
+          <div class="section-head teleop-head">
+            <div>
+              <h2>Teleop 遥操作台</h2>
+              <p>观察四路实时画面，通过页面或键盘控制轮式双臂机器人。</p>
+            </div>
+            <div class="button-row">
+              <span class="teleop-keyboard-badge">键盘控制 · 仅本页生效</span>
+              <button id="teleop-safety-stop" type="button" class="danger">遥操安全停止</button>
+              <button id="teleop-grasp-mode" type="button" aria-pressed="false">G 抓取辅助</button>
+              <button id="teleop-camera-expand" type="button" aria-pressed="false">F11 放大画面</button>
+              <button id="teleop-camera-reconnect" type="button" data-refresh-cameras>N 重连摄像头</button>
+            </div>
+          </div>
+          <div id="teleop-safety-notice" class="teleop-safety-notice" role="alert" hidden>
+            <span id="teleop-safety-message"></span>
+            <button id="teleop-safety-reset" type="button">解锁遥操</button>
+          </div>
+          <div id="teleop-grasp-toolbar" class="teleop-grasp-toolbar" hidden>
+            <div class="grasp-toolbar-title">
+              <strong>抓取辅助模式</strong>
+              <span id="grasp-depth-state" class="grasp-depth-state is-waiting">等待深度</span>
+              <small id="grasp-toolbar-hint">点击主画面选择目标；点击小画面可切换主相机</small>
+            </div>
+            <div class="grasp-toolbar-metrics" aria-live="polite">
+              <div><span>相机到目标</span><strong id="grasp-camera-distance">-- mm</strong></div>
+              <div><span>夹爪尖端余量</span><strong id="grasp-tip-distance">-- mm</strong></div>
+              <div><span>左侧视野</span><strong id="grasp-left-distance">-- mm</strong></div>
+              <div><span>右侧视野</span><strong id="grasp-right-distance">-- mm</strong></div>
+              <div><span>顶部视野</span><strong id="grasp-top-distance">-- mm</strong></div>
+            </div>
+            <div class="grasp-toolbar-settings">
+              <label>
+                相机至夹爪端面
+                <span><input id="grasp-tip-offset" type="number" min="0" max="1000" step="1" value="0"> mm</span>
+              </label>
+              <label>
+                黄色预警
+                <span><input id="grasp-warning-distance" type="number" min="20" max="1000" step="10" value="250"> mm</span>
+              </label>
+              <label>
+                红色危险
+                <span><input id="grasp-danger-distance" type="number" min="10" max="500" step="10" value="150"> mm</span>
+              </label>
+              <button id="grasp-reset-target" type="button">目标回到中心</button>
+            </div>
+            <p class="grasp-calibration-note">Left 已恢复相机原始视角；抓取辅助的安全包络用于辅助观察，仍不能代替现场防碰撞。</p>
+          </div>
+          <div id="teleop-camera-grid" class="camera-grid teleop-camera-grid" data-camera-grid></div>
+
+          <div class="teleop-shortcut-bar" aria-label="遥操作快捷键">
+            <div>
+              <span>底盘移动</span>
+              <strong><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></strong>
+            </div>
+            <div>
+              <span>升降（按住）</span>
+              <strong><kbd>I</kbd><kbd>J</kbd></strong>
+            </div>
+            <div>
+              <span>预设位姿</span>
+              <strong><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></strong>
+            </div>
+            <div>
+              <span>吸盘</span>
+              <strong><kbd>F</kbd></strong>
+            </div>
+            <div>
+              <span>摄像头</span>
+              <strong><kbd>F11</kbd> 放大 <kbd>N</kbd> 重连</strong>
+            </div>
+            <div class="teleop-estop-hint">
+              <span>全局急停（同时锁存遥操）</span>
+              <strong><kbd>Space</kbd></strong>
+            </div>
+          </div>
+
+          <div class="teleop-control-grid">
+            <article class="tool-panel teleop-drive-panel" id="gen-base-panel">
+              <div class="panel-title-row">
+                <div>
+                  <h3>底盘移动</h3>
+                  <p>页面按钮必须按住；键盘支持 W+A / W+D / S+A / S+D 组合，全部松开后立即停车。</p>
+                </div>
+                <span class="control-chip" id="gen-drive-chip">待命</span>
+              </div>
+              <div class="base-charging-interlock" id="base-charging-interlock">
+                <div>
+                  <strong>充电联锁</strong>
+                  <span id="base-charging-help">连接充电桩时请开启；开启后后端会拒绝所有底盘移动命令。</span>
+                </div>
+                <label>
+                  <input id="base-charging-toggle" type="checkbox" disabled>
+                  <span>底盘正在充电</span>
+                </label>
+              </div>
+              <div class="form-grid teleop-drive-settings">
+                <label>线速度 m/s
+                  <input id="gen-base-speed" type="number" min="0.01" max="0.2" step="0.01" value="0.08" readonly>
+                </label>
+                <label>角速度 rad/s
+                  <input id="gen-base-yaw" type="number" min="0.01" max="0.5" step="0.01" value="0.25" readonly>
+                </label>
+                <label title="每条移动指令的有效时长；按住按钮或按键时，网页会按该周期持续续发。">控制脉冲 s
+                  <input id="gen-base-duration" type="number" min="0.2" max="1.0" step="0.05" value="0.40" readonly>
+                </label>
+              </div>
+              <div class="base-settings-toolbar">
+                <div class="base-speed-presets" aria-label="底盘速度档位">
+                  <span>速度档位</span>
+                  <button type="button" data-base-preset="slow" title="0.08 m/s · 0.25 rad/s" disabled>慢速</button>
+                  <button type="button" data-base-preset="medium" title="0.11 m/s · 0.32 rad/s" disabled>中速</button>
+                  <button type="button" data-base-preset="fast" title="0.14 m/s · 0.38 rad/s" disabled>快速</button>
+                </div>
+                <div class="base-settings-actions">
+                  <span class="base-settings-state" id="base-settings-state">参数已锁定</span>
+                  <button id="base-settings-edit" type="button">修改</button>
+                  <button id="base-settings-save" class="base-settings-save" type="button" disabled>保存</button>
+                </div>
+              </div>
+              <p class="base-pulse-help">控制脉冲是单次移动指令的有效时长；按住时持续续发，松开立即停车。</p>
+              <div class="motion-pad teleop-motion-pad">
+                <button data-gen-move="forward-left"><kbd>W+A</kbd><span>前左</span></button>
+                <button data-gen-move="forward"><kbd>W</kbd><span>前进</span></button>
+                <button data-gen-move="forward-right"><kbd>W+D</kbd><span>前右</span></button>
+                <button data-gen-move="turn-left"><kbd>A</kbd><span>左转</span></button>
+                <button
+                  data-gen-move="stop"
+                  class="danger"
+                  title="只停止底盘当前运动，不触发全局急停锁"
+                  aria-label="停止底盘当前运动"
+                >底盘停止</button>
+                <button data-gen-move="turn-right"><kbd>D</kbd><span>右转</span></button>
+                <button data-gen-move="backward-left"><kbd>S+A</kbd><span>后左</span></button>
+                <button data-gen-move="backward"><kbd>S</kbd><span>后退</span></button>
+                <button data-gen-move="backward-right"><kbd>S+D</kbd><span>后右</span></button>
+              </div>
+            </article>
+
+            <article class="tool-panel teleop-lift-panel">
+              <div class="panel-title-row">
+                <div>
+                  <h3>升降杆</h3>
+                  <p>按住 <kbd>I</kbd> / <kbd>J</kbd> 持续升降，松开立即停止。</p>
+                </div>
+                <div class="lift-live-reading">
+                  <span>当前高度</span>
+                  <strong class="teleop-live-value"><span id="gen-lift-position-live">--</span> mm</strong>
+                </div>
+              </div>
+              <div class="lift-range-row">
+                <span>可行程</span>
+                <strong>0–300 mm</strong>
+                <span class="lift-hold-status" id="gen-lift-hold-status">待命</span>
+              </div>
+              <div class="lift-target-row">
+                <label>
+                  <span>目标高度</span>
+                  <span class="lift-target-input">
+                    <input id="gen-lift-target" type="number" min="0" max="300" step="1" value="200">
+                    <small>mm</small>
+                  </span>
+                </label>
+                <button data-gen-lift="goto" class="lift-goto-button">到达目标</button>
+                <button data-gen-lift="stop" class="danger lift-stop-button">停止</button>
+              </div>
+              <div class="lift-presets" aria-label="升降高度预设">
+                <button data-gen-lift-preset="60"><span>低位</span><strong>60</strong><small>mm</small></button>
+                <button data-gen-lift-preset="180"><span>桌面</span><strong>180</strong><small>mm</small></button>
+                <button data-gen-lift-preset="300"><span>高位</span><strong>300</strong><small>mm</small></button>
+              </div>
+              <div class="lift-hold-controls">
+                <button data-gen-lift-hold="up">
+                  <kbd>I</kbd>
+                  <span><strong>按住上升</strong><small>松开停止</small></span>
+                </button>
+                <button data-gen-lift-hold="down">
+                  <kbd>J</kbd>
+                  <span><strong>按住下降</strong><small>松开停止</small></span>
+                </button>
+              </div>
+            </article>
+
+            <article class="tool-panel teleop-suction-panel">
+              <div class="panel-title-row">
+                <div>
+                  <h3>吸盘</h3>
+                  <p>按 <kbd>F</kbd> 切换吸紧 / 泄劲；默认通过机器人侧 Linux 串口控制吸盘。</p>
+                </div>
+                <span class="control-chip suction-chip is-disconnected" id="teleop-suction-chip">未连接</span>
+              </div>
+              <button id="teleop-suction-toggle" class="teleop-suction-button" type="button">F 吸紧</button>
+              <p class="suction-status" id="teleop-suction-status">按 F 会优先使用机器人侧 /api/suction；失败时再尝试本机 bridge / CH340 串口</p>
+            </article>
+
+            <article class="tool-panel teleop-gripper-lock-panel">
+              <div class="panel-title-row">
+                <div>
+                  <h3>吸盘模式</h3>
+                  <p>屏蔽所选主臂的夹爪开度信号，让从臂夹爪持续夹紧吸盘。</p>
+                </div>
+                <span class="control-chip gripper-lock-chip" id="teleop-gripper-lock-chip">未锁定</span>
+              </div>
+              <div class="gripper-lock-control">
+                <label for="teleop-gripper-lock-arm">
+                  <span>选择安装吸盘的手</span>
+                  <select id="teleop-gripper-lock-arm">
+                    <option value="left">左手</option>
+                    <option value="right">右手</option>
+                  </select>
+                </label>
+                <label class="gripper-lock-switch" for="teleop-gripper-lock-toggle">
+                  <input id="teleop-gripper-lock-toggle" type="checkbox">
+                  <span class="gripper-lock-switch-track" aria-hidden="true"></span>
+                  <strong>禁用夹爪信号并保持收紧</strong>
+                </label>
+              </div>
+              <p class="gripper-lock-status" id="teleop-gripper-lock-status">
+                开启后会立即收紧所选从臂夹爪；机械臂关节仍正常跟随。
+              </p>
+              <small class="gripper-lock-runtime" id="teleop-gripper-lock-runtime">
+                正在读取遥操状态
+              </small>
+            </article>
+
+            <article class="tool-panel teleop-pose-panel">
+              <div class="panel-title-row">
+                <div>
+                  <h3>预设位姿</h3>
+                  <p>快捷键和按钮已预留，确认动作后再绑定真实机械臂指令。</p>
+                </div>
+              </div>
+              <div class="teleop-pose-grid">
+                <button data-teleop-pose="1"><kbd>1</kbd><span>预设位姿 1</span><small>未配置</small></button>
+                <button data-teleop-pose="2"><kbd>2</kbd><span>预设位姿 2</span><small>未配置</small></button>
+                <button data-teleop-pose="3"><kbd>3</kbd><span>预设位姿 3</span><small>未配置</small></button>
+                <button data-teleop-pose="4"><kbd>4</kbd><span>预设位姿 4</span><small>未配置</small></button>
+              </div>
+            </article>
+          </div>
+          <div id="teleop-arm-service-dock"></div>
+        </section>
+
+        <section id="agentic-view" class="section workspace-view" hidden>
+          <div class="section-head agentic-head">
+            <div class="agentic-heading-copy">
+              <h2>Agentic 自主任务</h2>
+              <p>Task 1 · 零售服务：读取小票，逐件取货并送回桌面。</p>
+            </div>
+            <button type="button" data-refresh-cameras>重新连接相机</button>
+          </div>
+
+          <nav id="agentic-subnav" class="agentic-subnav" role="tablist" aria-label="Agentic 工作模式">
+            <button
+              type="button"
+              id="agentic-task-tab"
+              class="agentic-subtab is-active"
+              role="tab"
+              aria-selected="true"
+              aria-controls="agentic-task-panel"
+              data-agentic-tab="task"
+            >任务执行</button>
+            <button
+              type="button"
+              id="agentic-debug-tab"
+              class="agentic-subtab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="agentic-debug-panel"
+              data-agentic-tab="debug"
+            >抓取调试 <small>高级</small></button>
+          </nav>
+
+          <div id="agentic-task-panel" class="agentic-tab-panel" role="tabpanel" aria-labelledby="agentic-task-tab">
+            <section id="task1-overview-bar" class="task1-overview-bar" aria-label="任务运行概览">
+              <div class="task1-overview-copy">
+                <strong>Task 1 · 零售服务</strong>
+                <span>比赛执行台</span>
+              </div>
+              <div class="task1-overview-meta">
+                <span id="task1-mode-badge" class="control-chip">尚未运行</span>
+                <span id="task1-status-badge" class="readiness-badge checking">状态同步中</span>
+                <div class="task1-elapsed-block">
+                  <span>任务耗时</span>
+                  <strong id="task1-elapsed">00:00</strong>
+                </div>
+                <button type="button" id="task1-software-stop" class="danger" disabled>软件停止</button>
+              </div>
+            </section>
+
+            <section id="task1-readiness-strip" class="task1-readiness-strip" aria-labelledby="task1-readiness-title">
+              <div class="task1-readiness-heading">
+                <div>
+                  <strong id="task1-readiness-title">运行就绪检查</strong>
+                  <span id="task1-readiness-summary">等待检查任务配置与机器人设备</span>
+                </div>
+              </div>
+              <div id="task1-readiness-list" class="task1-readiness-list" aria-live="polite">
+                <article class="task1-readiness-item is-muted"><span class="status-dot muted"></span><span>任务配置</span><strong>未检查</strong></article>
+                <article class="task1-readiness-item is-muted"><span class="status-dot muted"></span><span>导航服务</span><strong>未检查</strong></article>
+                <article class="task1-readiness-item is-muted"><span class="status-dot muted"></span><span>相机与感知</span><strong>未检查</strong></article>
+                <article class="task1-readiness-item is-muted"><span class="status-dot muted"></span><span>机械臂与夹爪</span><strong>未检查</strong></article>
+              </div>
+            </section>
+
+            <section class="tool-panel task1-phase-panel" aria-labelledby="task1-phase-title">
+              <div class="task1-panel-head">
+                <div>
+                  <h3 id="task1-phase-title">任务阶段</h3>
+                  <p id="task1-phase-summary">等待环境检查</p>
+                </div>
+              </div>
+              <div id="task1-phase-strip" class="task1-phase-strip" aria-live="polite">
+                <article class="task1-phase-step is-active"><span>1</span><strong>准备</strong><small>等待检查</small></article>
+                <article class="task1-phase-step"><span>2</span><strong>读取订单</strong><small>等待</small></article>
+                <article class="task1-phase-step"><span>3</span><strong>前往货架</strong><small>等待</small></article>
+                <article class="task1-phase-step"><span>4</span><strong>识别与抓取</strong><small>等待</small></article>
+                <article class="task1-phase-step"><span>5</span><strong>返回桌面</strong><small>等待</small></article>
+                <article class="task1-phase-step"><span>6</span><strong>放置商品</strong><small>等待</small></article>
+                <article class="task1-phase-step"><span>7</span><strong>完成</strong><small>等待</small></article>
+              </div>
+            </section>
+
+            <div class="task1-layout">
+              <div class="task1-column task1-left-column">
+                <section id="task1-control-panel" class="tool-panel" aria-labelledby="task1-control-title">
+                  <div class="task1-panel-head">
+                    <div>
+                      <h3 id="task1-control-title">配置与启动</h3>
+                      <p>先检查配置和设备，再进行软件预演或实机任务。</p>
+                    </div>
+                    <span id="task1-run-mode" class="control-chip">待命</span>
+                  </div>
+                  <label>任务配置
+                    <select id="task1-config-select" disabled>
+                      <option value="">正在读取可用配置…</option>
+                    </select>
+                  </label>
+                  <div class="task1-control-actions">
+                    <button type="button" id="task1-validate" disabled>检查任务配置</button>
+                    <button type="button" id="task1-preflight" disabled>设备预检</button>
+                    <button type="button" id="task1-dry-run" class="task1-primary-button" disabled>软件预演</button>
+                    <button type="button" id="task1-start-live" class="task1-live-button" disabled>开始实机任务</button>
+                  </div>
+                  <p class="task1-safety-note">软件预演不会下发底盘或机械臂运动；实机任务开始前请确认现场安全。软件停止不能替代物理急停。</p>
+                </section>
+
+                <section id="task1-order-panel" class="tool-panel" aria-labelledby="task1-order-title">
+                  <div class="task1-panel-head">
+                    <div>
+                      <h3 id="task1-order-title">订单队列</h3>
+                      <p id="task1-order-summary">尚未读取小票</p>
+                    </div>
+                  </div>
+                  <div id="task1-receipt-preview" class="task1-receipt-preview">
+                    <span>等待小票图像</span>
+                  </div>
+                  <div id="task1-order-list" class="task1-order-list" aria-live="polite">
+                    <div class="task1-empty-state">订单解析后将在这里显示商品</div>
+                  </div>
+                </section>
+              </div>
+
+              <section id="task1-visual-panel" class="tool-panel task1-visual-panel" aria-labelledby="task1-visual-title">
+                <div class="task1-panel-head">
+                  <div>
+                    <h3 id="task1-visual-title">现场视觉</h3>
+                    <p>导航、读单和抓取过程中持续观察各路相机。</p>
+                  </div>
+                  <span id="task1-camera-status" class="control-chip">正在连接</span>
+                </div>
+                <div id="agentic-camera-grid" class="camera-grid task1-camera-grid" data-camera-grid></div>
+              </section>
+
+              <aside class="task1-column task1-runtime-column" aria-label="任务实时状态">
+                <section id="task1-current-panel" class="tool-panel" aria-labelledby="task1-current-title">
+                  <div class="task1-panel-head">
+                    <div>
+                      <h3 id="task1-current-title">当前动作</h3>
+                      <p>状态机当前正在执行的步骤</p>
+                    </div>
+                  </div>
+                  <strong id="task1-current-action" class="task1-current-action">等待开始任务</strong>
+                  <p id="task1-current-detail" class="task1-current-detail">完成配置检查和设备预检后，可以启动任务。</p>
+                </section>
+
+                <section id="task1-navigation-panel" class="tool-panel" aria-labelledby="task1-navigation-title">
+                  <div class="task1-panel-head">
+                    <div>
+                      <h3 id="task1-navigation-title">导航状态</h3>
+                      <p id="task1-navigation-status">底盘待命</p>
+                    </div>
+                  </div>
+                  <div id="task1-navigation-detail" class="task1-navigation-detail">当前航点：--</div>
+                </section>
+
+                <section id="task1-error-panel" class="tool-panel task1-error-panel" role="alert" hidden>
+                  <div class="task1-panel-head">
+                    <div>
+                      <h3>任务异常</h3>
+                      <p id="task1-error-code">错误码：--</p>
+                    </div>
+                  </div>
+                  <p id="task1-error-message">任务发生异常，请先查看阻塞原因和现场状态。</p>
+                  <div id="task1-blocker-list" class="task1-blocker-list"></div>
+                </section>
+              </aside>
+            </div>
+
+            <div class="task1-bottom-grid">
+              <section id="task1-event-panel" class="tool-panel" aria-labelledby="task1-event-title">
+                <div class="task1-panel-head">
+                  <div>
+                    <h3 id="task1-event-title">事件时间线</h3>
+                    <p>显示结构化任务事件，不展示模型内部推理。</p>
+                  </div>
+                </div>
+                <ol id="task1-event-list" class="task1-event-list" aria-live="polite">
+                  <li class="task1-event-item is-muted"><time>--:--:--</time><span>等待任务事件</span></li>
+                </ol>
+              </section>
+
+              <section id="task1-observability-panel" class="tool-panel" aria-labelledby="task1-observability-title">
+                <div class="task1-panel-head">
+                  <div>
+                    <h3 id="task1-observability-title">任务日志与产物</h3>
+                    <p>保留本次任务的执行日志、识别结果和调试文件。</p>
+                  </div>
+                </div>
+                <pre id="task1-log" class="task1-log">等待任务启动…</pre>
+                <div id="task1-artifacts" class="task1-artifacts">
+                  <div class="task1-empty-state">暂无任务产物</div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div id="agentic-debug-panel" class="agentic-tab-panel" role="tabpanel" aria-labelledby="agentic-debug-tab" hidden>
+            <div class="subsection-head agentic-debug-head">
+              <div>
+                <h3>单次抓取调试</h3>
+                <p>高级功能：只验证一次抓取流程，不会推进零售任务状态机。</p>
+              </div>
+              <span class="readiness-badge warning">高级操作</span>
+            </div>
+            <div class="tool-panel full agentic-debug-tool">
+              <div class="form-grid wide">
+                <label>目标描述
+                  <input id="grasp-prompt" value="a bottle">
+                </label>
+                <label>执行手臂
+                  <select id="grasp-arm">
+                    <option value="right">右臂</option>
+                    <option value="left">左臂</option>
+                  </select>
+                </label>
+                <label>抓取策略
+                  <select id="grasp-strategy">
+                    <option value="default">默认</option>
+                    <option value="low-bottle">低位瓶体</option>
+                    <option value="side-bottle">侧向瓶体</option>
+                  </select>
+                </label>
+                <label>运动速度
+                  <select id="grasp-speed">
+                    <option value="SLOW">慢速</option>
+                    <option value="DEFAULT">默认</option>
+                    <option value="FAST">快速</option>
+                  </select>
+                </label>
+                <label>感知接口
+                  <select id="grasp-endpoint">
+                    <option value="/grasp">实际 ZeroGrasp</option>
+                    <option value="/grasp_dummy">模拟接口</option>
+                  </select>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <label><input id="grasp-record" type="checkbox"> 记录调试视频</label>
+              </div>
+              <div class="grasp-flow" id="grasp-flow">
+                <article class="grasp-step" id="grasp-step-validate">
+                  <div class="grasp-step-main">
+                    <span class="grasp-step-index">1</span>
+                    <div>
+                      <strong>环境检查</strong>
+                      <span>检查服务、相机和目标分割结果</span>
+                    </div>
+                  </div>
+                  <span class="grasp-step-state" id="grasp-step-validate-state">等待</span>
+                </article>
+                <article class="grasp-step" id="grasp-step-dry-run">
+                  <div class="grasp-step-main">
+                    <span class="grasp-step-index">2</span>
+                    <div>
+                      <strong>软件预演</strong>
+                      <span>生成抓取方案，不运动机器人硬件</span>
+                    </div>
+                  </div>
+                  <span class="grasp-step-state" id="grasp-step-dry-run-state">等待</span>
+                </article>
+                <article class="grasp-step" id="grasp-step-reality">
+                  <div class="grasp-step-main">
+                    <span class="grasp-step-index">3</span>
+                    <div>
+                      <strong>实机抓取</strong>
+                      <span>执行已完成预演的单次抓取方案</span>
+                    </div>
+                  </div>
+                  <span class="grasp-step-state" id="grasp-step-reality-state">未解锁</span>
+                </article>
+              </div>
+              <p id="grasp-flow-note" class="grasp-flow-note">
+                点击“检查并预演”完成环境检查和软件预演，确认结果后才能执行实机抓取。
+              </p>
+              <div class="button-row">
+                <button type="button" id="start-grasp">检查并预演</button>
+                <button type="button" id="run-grasp-reality" class="danger" disabled>执行实机抓取</button>
+              </div>
+            </div>
+
+            <div class="subsection-head">
+              <h3>调试结果</h3>
+              <button type="button" id="refresh-artifacts">刷新</button>
+            </div>
+            <div id="artifacts" class="artifact-grid"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+
+    <div id="toast" class="toast" hidden></div>
+    <script src="/app.js?v=20260730-teleop-safety-v1"></script>
+    <script src="/generalist.js?v=20260731-eef-watchdog-v1"></script>
+    <script src="/terminal.js?v=20260730-teleop-only-v1"></script>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+profile: local
+role: local
+bind: 127.0.0.1
+port: 8888
+web_auth_mode: disabled
+allowed_origins:
+  - http://10.47.74.79:8888
+  - http://127.0.0.1:8888
+  - http://127.0.0.1:18888
+  - http://localhost:8888
+  - http://127.0.0.1:8766
+  - http://localhost:8766
+
+# Base/lift ownership lives in the isolated teleop backend. Port 8888 proxies
+# the shared motion endpoints there instead of opening a second hardware owner.
+robot_api_url: http://127.0.0.1:9999
+perception_url: http://10.77.110.127:9100
+ros_master_uri: http://192.168.31.7:11311/
+
+enable_hardware_actions: true
+require_global_safety_channels: false
+conda_env: dos-w1
+
+airbot_host: 127.0.0.1
+airbot_ports:
+  - 50051
+  - 50053
+
+max_linear_mps: 0.2
+max_angular_radps: 0.5
+max_base_duration_s: 5.0
+camera_runtime_overrides: false
+camera_jpeg_quality: 80
+
+cameras:
+  - name: front
+    label: Front
+    serial: "420222072569"
+    source: realsense:420222072569
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true
+  - name: left
+    label: Left
+    serial: "347622072392"
+    source: realsense:347622072392
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true
+  - name: right
+    label: Right
+    serial: "347622071407"
+    source: realsense:347622071407
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true

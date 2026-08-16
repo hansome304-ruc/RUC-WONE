@@ -1,0 +1,53 @@
+profile: competition
+role: robot
+bind: 0.0.0.0
+port: 8765
+
+robot_api_url: http://127.0.0.1:8765
+perception_url: http://COMPUTE_BOX_IP:9100
+ros_master_uri: http://192.168.31.7:11311/
+
+enable_hardware_actions: true
+require_global_safety_channels: true
+conda_env: dos-w1
+
+airbot_host: 127.0.0.1
+airbot_ports:
+  - 50051
+  - 50053
+
+camera_runtime_overrides: false
+
+cameras:
+  - name: front
+    label: Front
+    serial: "420222072569"
+    source: realsense:420222072569
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true
+  - name: left
+    label: Left
+    serial: "347622072392"
+    source: realsense:347622072392
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true
+  - name: right
+    label: Right
+    serial: "347622071407"
+    source: realsense:347622071407
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true
+  - name: orbbec
+    label: Orbbec
+    serial: "CP0BB5300092"
+    source: /dev/v4l/by-path/pci-0000:c6:00.3-usb-0:1:1.4-video-index0
+    width: 960
+    height: 540
+    fps: 15
+    enabled: true
